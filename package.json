@@ -1,0 +1,15 @@
+{
+  "name": "cafeteria-display",
+  "version": "1.0.0",
+  "description": "Cafeteria AI nutrition display application",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.3.0",
+    "nodemailer": "^10.2.1"
+  }
+}

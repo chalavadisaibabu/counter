@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Food Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: #0a1628; color: #f1f5f9; min-height: 100vh; }
+  .hidden { display: none !important; }
+  button { cursor: pointer; border: 0; border-radius: 10px; font-size: 1rem; padding: 12px 22px; }
+  .primary { background: #22c55e; color: #052e16; font-weight: bold; }
+  .ghost { background: #334155; color: #f1f5f9; }
+  input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #475569;
+          background: #1e293b; color: #fff; font-size: 1rem; }
+  .error { color: #f87171; margin-top: 10px; min-height: 1.2em; }
+
+  /* ===== Page 1: Login (light food design) ===== */
+  #login { position: relative; min-height: 100vh; background: #e9ebf0; color: #333;
+           padding: 84px 22px 22px; display: flex; overflow: hidden; }
+  .ghost-title { position: absolute; top: -34px; left: 0; right: 0; text-align: center; line-height: 1;
+                 font-family: 'Playfair Display', Georgia, serif; font-weight: 900;
+                 font-size: clamp(5rem, 15vw, 11rem); color: rgba(0,0,0,.06); pointer-events: none; user-select: none; }
+  .stage { position: relative; z-index: 1; width: 100%; max-width: 1150px; margin: 0 auto; background: #f4f5f8;
+           min-height: calc(100vh - 106px); overflow: hidden; display: flex; flex-direction: column;
+           align-items: center; padding: 34px 24px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.08); }
+  .plate { position: absolute; z-index: 1; border-radius: 50%; border: clamp(8px, 1.2vw, 16px) solid #6cc4b8;
+           background-color: #e8f6f3; background-size: cover; background-position: center;
+           box-shadow: 0 18px 40px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center;
+           font-size: clamp(3rem, 8vw, 7rem); }
+  .p1 { width: min(30vw, 360px); height: min(30vw, 360px); left: max(-12vw, -140px); top: 34%; }
+  .p2 { width: min(26vw, 320px); height: min(26vw, 320px); right: max(-8vw, -90px); top: max(-8vw, -100px); }
+  .p3 { width: min(20vw, 230px); height: min(20vw, 230px); right: max(-5vw, -60px); bottom: 22%; }
+  .logo { position: absolute; z-index: 2; left: 34px; top: 26px; width: 86px; height: 86px; border-radius: 50%;
+          border: 3px solid #d6004f; background: #fff; color: #d6004f; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center; font-size: .5rem; font-weight: 800; letter-spacing: .6px; }
+  .logo span { font-size: 1.6rem; line-height: 1.1; }
+  .head { position: relative; z-index: 2; text-align: center; margin-top: 44px; }
+  .head h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 2.3rem; color: #1b1b1f; }
+  .head p { color: #777; font-size: .9rem; margin-top: 8px; }
+  .head .pink { color: #d6004f; font-weight: 700; }
+
+  .card { position: relative; z-index: 2; margin-top: 34px; width: 420px; max-width: 100%; background: #fff;
+          padding: 42px 38px 32px; border-radius: 4px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  .field { position: relative; margin-bottom: 18px; }
+  .field .ic { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #aaa; display: flex; }
+  .field input { width: 100%; height: 52px; padding: 0 48px; border-radius: 999px; border: 1px solid #e6e7ec;
+                 background: #f7f7fa; color: #333; font-size: .95rem; }
+  .field input::placeholder { color: #aeb0b8; }
+  .field input:focus { outline: none; border-color: #d6004f; background: #fff; }
+  .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: 0;
+         padding: 6px; color: #aaa; display: flex; }
+  .eye:hover { color: #d6004f; }
+  .row2 { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: #999; margin: 2px 4px 24px; }
+  .row2 label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .row2 input[type=checkbox] { width: 16px; height: 16px; padding: 0; accent-color: #d6004f; }
+  .row2 a, .sec-links a { color: #999; cursor: pointer; font-weight: 700; }
+  .row2 a:hover, .sec-links a:hover { color: #d6004f; }
+  .login-btn { width: 100%; height: 52px; border-radius: 999px; background: #d6004f; color: #fff; font-weight: 800;
+               font-size: .9rem; letter-spacing: 1px; text-transform: uppercase; padding: 0;
+               box-shadow: 0 10px 22px rgba(214,0,79,.35); transition: .2s; }
+  .login-btn:hover { background: #b80043; }
+  .sec-links { text-align: center; margin-top: 18px; font-size: .85rem; display: flex; justify-content: center; gap: 22px; }
+  .card .help { color: #888; font-size: .85rem; text-align: center; margin-bottom: 20px; }
+  .msg-err { color: #d6004f; margin-top: 14px; min-height: 1.2em; text-align: center; font-size: .85rem; }
+  .msg-ok { color: #16a34a; margin-top: 14px; min-height: 1.2em; text-align: center; font-size: .85rem; }
+  .stfoot { position: relative; z-index: 2; width: 100%; margin-top: auto; padding-top: 16px; border-top: 1px solid #e3e4e8;
+            text-align: right; font-size: .75rem; color: #888; }
+  .stage .spacer { height: 60px; }
+
+  /* ===== Page 2: Input ===== */
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; background: #1e293b; }
+  .plus { width: 52px; height: 52px; border-radius: 50%; font-size: 2rem; padding: 0;
+          background: #22c55e; color: #052e16; line-height: 1; }
+  #inputs { max-width: 600px; margin: 30px auto; padding: 0 20px 110px; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .row .del { background: #7f1d1d; color: #fff; padding: 0 16px; }
+  .hint { text-align: center; color: #94a3b8; margin-top: 60px; }
+  .submitbar { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #1e293b; text-align: center; }
+  .submitbar button { width: 100%; max-width: 600px; font-size: 1.1rem; }
+
+  /* ===== Page 3: AI loading ===== */
+  #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
+  .spinner { width: 60px; height: 60px; border: 6px solid #334155; border-top-color: #22c55e;
+             border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== Page 4: Smart Food Menu ===== */
+  #display { background: radial-gradient(circle at top, #10284a 0%, #0a1628 60%); min-height: 100vh; padding: 22px 26px 18px; position: relative; }
+  .menu-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+  .menu-head h1 { font-size: clamp(1.8rem, 3.2vw, 3rem); font-weight: 800; letter-spacing: 1px; line-height: 1.1; }
+  .menu-head p { color: #7dd3fc; font-size: clamp(.8rem, 1.3vw, 1.2rem); letter-spacing: 1px; margin-top: 6px; }
+  .legend { display: flex; flex-direction: column; gap: 6px; font-size: clamp(.8rem, 1.1vw, 1rem); }
+  .legend div { display: flex; align-items: center; gap: 8px; }
+  .legend .l1 { display: flex; gap: 22px; }
+  .leaf { width: 1.3em; height: 1.3em; fill: #22c55e; flex: none; }
+  .leaf.vegan { fill: #84cc16; }
+  .nv { font-size: 1.3em; line-height: 1; }
+  #cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card4 { background: linear-gradient(160deg, rgba(30,58,95,.55), rgba(15,30,55,.75));
+          border: 1px solid rgba(125,211,252,.25); border-radius: 18px; padding: 16px 20px; }
+  .card4 h2 { font-size: clamp(1.2rem, 2.2vw, 2rem); display: flex; align-items: center; gap: 10px; }
+  .serving { color: #cbd5e1; font-size: clamp(.8rem, 1.1vw, 1rem); margin: 4px 0 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.15); }
+  .kcal { font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 800; color: #6ee7b7; line-height: 1.1; }
+  .kcal small { font-size: .4em; font-weight: 400; color: #cbd5e1; margin-left: 6px; }
+  .macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+  .macro { text-align: center; border-radius: 10px; padding: 6px 2px; border: 1.5px solid; }
+  .macro span { display: block; font-size: clamp(.7rem, 1vw, .95rem); }
+  .macro b { display: block; font-size: clamp(1rem, 1.6vw, 1.5rem); color: #fff; }
+  .m-protein { border-color: #3b82f6; background: rgba(59,130,246,.15); } .m-protein span { color: #93c5fd; }
+  .m-carbs   { border-color: #22c55e; background: rgba(34,197,94,.15); }  .m-carbs span   { color: #86efac; }
+  .m-fat     { border-color: #eab308; background: rgba(234,179,8,.15); }  .m-fat span     { color: #fde047; }
+  .m-fibre   { border-color: #8b5cf6; background: rgba(139,92,246,.18); } .m-fibre span   { color: #c4b5fd; }
+  .info { border-top: 1px solid rgba(255,255,255,.15); padding-top: 8px; font-size: clamp(.75rem, 1.05vw, .95rem); color: #cbd5e1; line-height: 1.6; }
+  .info b { color: #fff; }
+  .allergen { margin-top: 10px; display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px;
+              background: rgba(127,29,29,.45); border: 1px solid rgba(239,68,68,.5); font-size: clamp(.75rem, 1.05vw, .95rem); }
+  .allergen .warn { flex: none; width: 2em; height: 2em; fill: #ef4444; }
+  .allergen b { color: #fca5a5; }
+  .foot { text-align: center; color: #64748b; font-size: .8rem; margin-top: 12px; }
+
+  /* Edit / Fullscreen buttons (bigger) */
+  .controls { display: flex; justify-content: flex-end; gap: 14px; margin-bottom: 14px; }
+  .controls button { padding: 16px 34px; font-size: 1.3rem; font-weight: bold; border-radius: 12px;
+                     background: #334155; color: #fff; border: 2px solid #64748b; transition: .2s; }
+  .controls button:hover { background: #22c55e; color: #052e16; border-color: #22c55e; }
+  :fullscreen .controls { display: none; }
+
+  @media (max-width: 800px) {
+    #cards { grid-template-columns: 1fr; }
+    .logo, .p3 { display: none; }
+    .card { padding: 34px 22px 26px; }
+    .head { margin-top: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: LOGIN -->
+<div id="login">
+  <div class="ghost-title" id="ghostTitle">Login</div>
+  <div class="stage">
+    <div class="plate p1" id="p1"></div>
+    <div class="plate p2" id="p2"></div>
+    <div class="plate p3" id="p3"></div>
+
+    <div class="logo"><span>🍽️</span>CAFETERIA<br>SMART MENU</div>
+
+    <div class="head">
+      <h1 id="headTitle">Login</h1>
+      <p id="headSub"></p>
+    </div>
+
+    <div class="card">
+      <!-- Login panel -->
+      <div id="pLogin">
+        <div class="field" data-ic="user"><input id="user" placeholder="Username" autocomplete="username"></div>
+        <div class="field" data-ic="lock" data-eye><input id="pass" type="password" placeholder="Password" autocomplete="current-password"></div>
+        <div class="row2">
+          <label><input type="checkbox" id="remember"> Remember me</label>
+          <a onclick="showPanel('pForgot')">Forgot Password?</a>
+        </div>
+        <button class="login-btn" onclick="login()">Login</button>
+      </div>
+
+      <!-- Forgot password panel -->
+      <div id="pForgot" class="hidden">
+        <p class="help">Enter your username. A 6-digit reset code will be sent.</p>
+        <div class="field" data-ic="user"><input id="fUser" placeholder="Username"></div>
+        <button class="login-btn" onclick="forgot()">Send Reset Code</button>
+        <div class="sec-links">
+          <a onclick="showPanel('pLogin')">← Back to login</a>
+          <a onclick="showPanel('pReset')">I have a code</a>
+        </div>
+      </div>
+
+      <!-- Reset password panel -->
+      <div id="pReset" class="hidden">
+        <div class="field" data-ic="user"><input id="rUser" placeholder="Username"></div>
+        <div class="field" data-ic="lock"><input id="rCode" placeholder="6-digit reset code" inputmode="numeric" maxlength="6"></div>
+        <div class="field" data-ic="lock" data-eye><input id="rPass" type="password" placeholder="New password (min 6 characters)"></div>
+        <div class="field" data-ic="lock" data-eye><input id="rPass2" type="password" placeholder="Confirm new password"></div>
+        <button class="login-btn" onclick="resetPassword()">Reset Password</button>
+        <div class="sec-links"><a onclick="showPanel('pLogin')">← Back to login</a></div>
+      </div>
+
+      <div class="msg-err" id="loginErr"></div>
+      <div class="msg-ok" id="loginOk"></div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="stfoot">© 2026 Cafeteria Smart Food Menu. All rights reserved.</div>
+  </div>
+</div>
+
+<!-- PAGE 2: INPUT -->
+<div id="input" class="hidden">
+  <header>
+    <h2>Enter Food Items</h2>
+    <div>
+      <button class="ghost" onclick="logout()">Logout</button>
+      <button class="plus" title="Add dish" onclick="addRow()">+</button>
+    </div>
+  </header>
+  <div id="inputs">
+    <p class="hint" id="hint">Click the + button (top right) to add a dish</p>
+  </div>
+  <div class="submitbar">
+    <div class="error" id="inputErr" style="margin:0 0 8px"></div>
+    <button class="primary" onclick="submitDishes()">Submit</button>
+  </div>
+</div>
+
+<!-- PAGE 3: AI LOADING -->
+<div id="loading" class="hidden">
+  <div class="spinner"></div>
+  <h2>AI is analysing your food items...</h2>
+</div>
+
+<!-- PAGE 4: SMART FOOD MENU -->
+<div id="display" class="hidden">
+  <div class="controls">
+    <button class="ghost" onclick="goBack()">Edit</button>
+    <button class="ghost" onclick="toggleFull()">Fullscreen</button>
+  </div>
+  <div class="menu-head">
+    <div>
+      <h1>SMART FOOD MENU</h1>
+      <p>NUTRITION FACTS &amp; ALLERGEN INFORMATION</p>
+    </div>
+    <div class="legend">
+      <div class="l1">
+        <div>__LEAF__ Vegetarian</div>
+        <div><span class="nv">🐔</span> Non-Vegetarian</div>
+      </div>
+      <div>__LEAFV__ Vegan Friendly</div>
+    </div>
+  </div>
+  <div id="cards"></div>
+  <div class="foot">* Approximate values per serving. Recipes may vary.</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pages = ['login', 'input', 'loading', 'display'];
+function show(p) {
+  pages.forEach(x => $(x).classList.toggle('hidden', x !== p));
+  if (p === 'login') { loadPlates(); prefillUser(); }
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+function token() { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+
+const LEAF = '<svg class="leaf" viewBox="0 0 24 24"><path d="M20 3C9 3 4 9 4 15c0 1.5.4 2.8 1 3.9C7 14 11 11 15 10c-3 2-5.5 5-7 9 1 .6 2.2 1 3.5 1 7 0 9-7 9-17z"/></svg>';
+const LEAFV = LEAF.replace('class="leaf"', 'class="leaf vegan"');
+const WARN = '<svg class="warn" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>';
+document.querySelector('.legend').innerHTML = document.querySelector('.legend').innerHTML
+  .replace('__LEAF__', LEAF).replace('__LEAFV__', LEAFV);
+
+// ---------- Input field icons + show/hide password ----------
+const S = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+const ICONS = {
+  user: `<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>`,
+  lock: `<svg ${S}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`,
+  eye:  `<svg ${S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`
+};
+document.querySelectorAll('.field').forEach(f => {
+  const input = f.querySelector('input');
+  f.insertAdjacentHTML('afterbegin', `<span class="ic">${ICONS[f.dataset.ic]}</span>`);
+  if (f.dataset.eye !== undefined) {
+    f.insertAdjacentHTML('beforeend', `<button type="button" class="eye" tabindex="-1" title="Show / hide">${ICONS.eye}</button>`);
+    f.querySelector('.eye').onclick = () => { input.type = input.type === 'password' ? 'text' : 'password'; };
+  }
+});
+
+// ---------- Login page: random food plates ----------
+const EMOJIS = ['🍕','🍔','🍛','🥗','🍜','🍣','🥘','🌮','🍩','🍎','🥞','🍰','🍗','🥪','🍝','🧁'];
+const shuffle = a => [...a].sort(() => Math.random() - 0.5);
+async function loadPlates() {
+  let imgs = [];
+  try { imgs = (await (await fetch('/api/bg-images')).json()).images || []; } catch (e) {}
+  const s = shuffle(imgs), e = shuffle(EMOJIS);
+  ['p1', 'p2', 'p3'].forEach((id, i) => {
+    const el = $(id);
+    if (s.length) { el.style.backgroundImage = `url('${s[i % s.length]}')`; el.textContent = ''; }
+    else { el.style.backgroundImage = 'none'; el.textContent = e[i]; }
+  });
+}
+function prefillUser() {
+  const u = localStorage.getItem('remember_user');
+  if (u) { $('user').value = u; $('remember').checked = true; }
+}
+
+// ---------- Login / Forgot / Reset ----------
+const HEAD = {
+  pLogin:  ['Login', 'Manage today\'s menu with <span class="pink">AI nutrition facts</span> for every dish'],
+  pForgot: ['Forgot Password', 'We will send a <span class="pink">6-digit code</span> to reset your password'],
+  pReset:  ['Reset Password', 'Enter the code and choose a <span class="pink">new password</span>']
+};
+function setMsg(text, isErr) {
+  $('loginErr').textContent = isErr ? text : '';
+  $('loginOk').textContent = isErr ? '' : text;
+}
+function showPanel(id) {
+  ['pLogin', 'pForgot', 'pReset'].forEach(p => $(p).classList.toggle('hidden', p !== id));
+  $('headTitle').textContent = HEAD[id][0];
+  $('ghostTitle').textContent = HEAD[id][0];
+  $('headSub').innerHTML = HEAD[id][1];
+  setMsg('', true);
+}
+showPanel('pLogin');
+
+async function post(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  return { ok: r.ok, data: await r.json() };
+}
+async function login() {
+  setMsg('', true);
+  const username = $('user').value;
+  const { ok, data } = await post('/api/login', { username, password: $('pass').value });
+  if (!ok) return setMsg(data.error, true);
+
+  if ($('remember').checked) {           // Remember me: stay logged in after closing / reboot
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('remember_user', username);
+    sessionStorage.removeItem('token');
+  } else {                               // only for this browser session
+    sessionStorage.setItem('token', data.token);
+    localStorage.removeItem('token');
+    localStorage.removeItem('remember_user');
+  }
+  $('pass').value = '';
+  show('input');
+}
+async function forgot() {
+  const username = $('fUser').value.trim();
+  if (!username) return setMsg('Please enter your username', true);
+  const { data } = await post('/api/forgot', { username });
+  $('rUser').value = username;
+  showPanel('pReset');
+  setMsg(data.message, false);
+}
+async function resetPassword() {
+  const p1 = $('rPass').value, p2 = $('rPass2').value;
+  if (!$('rUser').value.trim() || !$('rCode').value.trim()) return setMsg('Enter username and reset code', true);
+  if (p1.length < 6) return setMsg('Password must be at least 6 characters', true);
+  if (p1 !== p2) return setMsg('Passwords do not match', true);
+  const { ok, data } = await post('/api/reset', { username: $('rUser').value.trim(), code: $('rCode').value.trim(), newPassword: p1 });
+  if (!ok) return setMsg(data.error, true);
+  ['rCode', 'rPass', 'rPass2'].forEach(i => $(i).value = '');
+  showPanel('pLogin');
+  setMsg(data.message, false);
+}
+$('pass').addEventListener('keydown', e => e.key === 'Enter' && login());
+$('user').addEventListener('keydown', e => e.key === 'Enter' && $('pass').focus());
+$('fUser').addEventListener('keydown', e => e.key === 'Enter' && forgot());
+$('rPass2').addEventListener('keydown', e => e.key === 'Enter' && resetPassword());
+function logout() {
+  localStorage.removeItem('token'); sessionStorage.removeItem('token'); localStorage.removeItem('items');
+  showPanel('pLogin'); show('login');
+}
+
+// ---------- Input page ----------
+function addRow(value = '') {
+  $('hint')?.remove();
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<input class="dish" placeholder="Enter dish name (e.g. Masala Dosa)" value="${esc(value)}">
+                   <button class="del" onclick="this.parentElement.remove()">✕</button>`;
+  $('inputs').appendChild(row);
+  row.querySelector('input').focus();
+}
+
+async function submitDishes() {
+  $('inputErr').textContent = '';
+  const dishes = [...document.querySelectorAll('.dish')].map(i => i.value.trim()).filter(Boolean);
+  if (!dishes.length) return $('inputErr').textContent = 'Please add at least one dish (use the + button)';
+
+  show('loading');
+  try {
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
+      body: JSON.stringify({ dishes })
+    });
+    const d = await r.json();
+    if (r.status === 401) { logout(); return; }
+    if (!r.ok) throw new Error(d.error);
+    localStorage.setItem('items', JSON.stringify(d.items));
+    render(d.items);
+  } catch (e) {
+    show('input');
+    $('inputErr').textContent = e.message;
+  }
+}
+
+// ---------- Display page (Smart Food Menu) ----------
+function typeIcon(t) {
+  if (t === 'non-veg') return '<span class="nv">🐔</span>';
+  if (t === 'vegan') return LEAFV;
+  return LEAF;
+}
+function render(items) {
+  $('cards').innerHTML = items.map(f => `
+    <div class="card4">
+      <h2>${esc(f.name)} ${typeIcon(f.type)}</h2>
+      <div class="serving">Serving Size: ${esc(f.serving_size || '-')}</div>
+      <div class="kcal">${esc(f.calories)}<small>kcal*</small></div>
+      <div class="macros">
+        <div class="macro m-protein"><span>Protein</span><b>${esc(f.protein_g)} g</b></div>
+        <div class="macro m-carbs"><span>Carbs</span><b>${esc(f.carbs_g)} g</b></div>
+        <div class="macro m-fat"><span>Fat</span><b>${esc(f.fat_g)} g</b></div>
+        <div class="macro m-fibre"><span>Fibre</span><b>${esc(f.fibre_g ?? f.fiber_g)} g</b></div>
+      </div>
+      <div class="info">
+        <div><b>Vitamins:</b> ${esc((f.vitamins || []).join(', '))}</div>
+        <div><b>Minerals:</b> ${esc((f.minerals || []).join(', '))}</div>
+      </div>
+      <div class="allergen">${WARN}<div><b>Allergens:</b> ${esc((f.allergens || ['None known']).join(', '))}</div></div>
+    </div>`).join('');
+  show('display');
+}
+function goBack() { show('input'); }
+function toggleFull() {
+  document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+}
+
+// ---------- On page load ----------
+(function init() {
+  if (!token()) return show('login');
+  const saved = localStorage.getItem('items');
+  if (saved) { try { render(JSON.parse(saved)); } catch (e) { show('input'); } } else show('input');
+})();
+</script>
+</body>
+</html>
