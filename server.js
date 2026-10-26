@@ -5,12 +5,6 @@ const express = require('express');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
-const dns = require('dns');
-
-// Prefer IPv4 on networks where IPv6 connectivity is unreliable.
-try {
-  dns.setDefaultResultOrder('ipv4first');
-} catch (_) {}
 
 const app = express();
 
@@ -25,29 +19,32 @@ const PORT = Number(process.env.PORT || 3000);
 const USER_DEFAULT = process.env.APP_USER || 'admin';
 const PASS_DEFAULT = process.env.APP_PASS || 'admin123';
 
-const API_KEY = (process.env.GEMINI_API_KEY || '').trim();
-const MODEL = (process.env.GEMINI_MODEL || 'gemini-3.8-flash').trim();
+const API_KEY = (process.env.OPENAI_API_KEY || '').trim();
+const MODEL = (process.env.OPENAI_MODEL || 'gpt-4.1-mini').trim();
 
 const USERS_FILE = path.join(__dirname, 'users.json');
 const IMG_DIR = path.join(__dirname, 'public', 'images');
 
 const tokens = new Set();
-
 let user;
 let resetState = null;
 
-// Cache successful results for six hours while the server runs.
+// Successful nutrition results are cached for 6 hours.
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const nutritionCache = new Map();
 
-function makeCacheKey(dishes) {
+// ==================================================
+// CACHE HELPERS
+// ==================================================
+
+function cacheKeyForDishes(dishes) {
   return dishes
-    .map(dish => dish.toLowerCase().replace(/\s+/g, ' ').trim())
+    .map(d => d.toLowerCase().replace(/\s+/g, ' ').trim())
     .join('|');
 }
 
 function getCachedAnalysis(dishes) {
-  const key = makeCacheKey(dishes);
+  const key = cacheKeyForDishes(dishes);
   const entry = nutritionCache.get(key);
 
   if (!entry) return null;
@@ -66,7 +63,7 @@ function saveCachedAnalysis(dishes, items) {
     if (oldestKey) nutritionCache.delete(oldestKey);
   }
 
-  nutritionCache.set(makeCacheKey(dishes), {
+  nutritionCache.set(cacheKeyForDishes(dishes), {
     savedAt: Date.now(),
     items
   });
@@ -78,7 +75,9 @@ function saveCachedAnalysis(dishes, items) {
 
 function hash(password) {
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = crypto.scryptSync(password, salt, 32).toString('hex');
+  const passwordHash = crypto
+    .scryptSync(password, salt, 32)
+    .toString('hex');
 
   return `${salt}:${passwordHash}`;
 }
@@ -99,10 +98,8 @@ function verify(password, stored) {
     const calculatedHash = crypto.scryptSync(password, salt, 32);
     const expectedHash = Buffer.from(savedHash, 'hex');
 
-    return (
-      calculatedHash.length === expectedHash.length &&
-      crypto.timingSafeEqual(calculatedHash, expectedHash)
-    );
+    return calculatedHash.length === expectedHash.length &&
+      crypto.timingSafeEqual(calculatedHash, expectedHash);
   } catch (_) {
     return false;
   }
@@ -128,7 +125,6 @@ function loadUser() {
   };
 
   fs.writeFileSync(USERS_FILE, JSON.stringify(initialUser, null, 2));
-
   return initialUser;
 }
 
@@ -152,12 +148,12 @@ async function sendCode(code) {
   ) {
     try {
       const nodemailer = require('nodemailer');
-      const smtpPort = Number(process.env.SMTP_PORT || 587);
+      const port = Number(process.env.SMTP_PORT || 587);
 
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: smtpPort,
-        secure: smtpPort === 465,
+        port,
+        secure: port === 465,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
@@ -168,9 +164,7 @@ async function sendCode(code) {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: user.email,
         subject: 'Cafeteria Display - Password Reset Code',
-        text:
-          `Your password reset code is ${code}. ` +
-          'It is valid for 10 minutes. If you did not request this, ignore this email.'
+        text: `Your password reset code is ${code}. It is valid for 10 minutes.`
       });
 
       console.log('Password reset email sent.');
@@ -180,7 +174,7 @@ async function sendCode(code) {
     }
   }
 
-  // Local-development fallback. Configure SMTP for production.
+  // Development fallback only. Configure SMTP for production.
   console.log('PASSWORD RESET CODE:', code, '(valid for 10 minutes)');
 }
 
@@ -199,7 +193,6 @@ app.post('/api/login', (req, res) => {
   ) {
     const token = crypto.randomBytes(32).toString('hex');
     tokens.add(token);
-
     return res.json({ token });
   }
 
@@ -228,8 +221,7 @@ app.post('/api/forgot', async (req, res) => {
   }
 
   return res.json({
-    message:
-      'If the username is correct, a reset code has been sent. It is valid for 10 minutes.'
+    message: 'If the username is correct, a reset code has been sent. It is valid for 10 minutes.'
   });
 });
 
@@ -252,7 +244,6 @@ app.post('/api/reset', (req, res) => {
     Date.now() > resetState.expires
   ) {
     resetState = null;
-
     return res.status(400).json({
       error: 'Invalid or expired code. Please request a new one.'
     });
@@ -262,16 +253,13 @@ app.post('/api/reset', (req, res) => {
 
   if (resetState.attempts > 5) {
     resetState = null;
-
     return res.status(429).json({
       error: 'Too many wrong attempts. Please request a new code.'
     });
   }
 
   if (typeof code !== 'string' || code.trim() !== resetState.code) {
-    return res.status(400).json({
-      error: 'Wrong reset code'
-    });
+    return res.status(400).json({ error: 'Wrong reset code' });
   }
 
   try {
@@ -286,7 +274,6 @@ app.post('/api/reset', (req, res) => {
     });
   } catch (error) {
     console.error('Password save failed:', error.message);
-
     return res.status(500).json({
       error: 'Could not save the new password.'
     });
@@ -299,9 +286,8 @@ app.post('/api/reset', (req, res) => {
 
 app.get('/api/bg-images', (req, res) => {
   try {
-    const files = fs.readdirSync(IMG_DIR).filter(file =>
-      /\.(jpe?g|png|webp)$/i.test(file)
-    );
+    const files = fs.readdirSync(IMG_DIR)
+      .filter(file => /\.(jpe?g|png|webp)$/i.test(file));
 
     return res.json({
       images: files.map(file => '/images/' + encodeURIComponent(file))
@@ -312,30 +298,14 @@ app.get('/api/bg-images', (req, res) => {
 });
 
 // ==================================================
-// GEMINI CONNECTION HELPERS
+// OPENAI REQUEST HELPER
 // ==================================================
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function describeNetworkError(error) {
-  const cause = error && error.cause;
-
-  if (!cause) {
-    return error ? error.message : 'Unknown network error';
-  }
-
-  const details = [
-    cause.code ? `code=${cause.code}` : '',
-    cause.message ? `cause=${cause.message}` : ''
-  ].filter(Boolean).join(', ');
-
-  return `${error.message}${details ? ` (${details})` : ''}`;
-}
-
-async function requestGemini(endpoint, options) {
-  const retryableStatuses = new Set([429, 500, 502, 503, 504]);
+async function requestOpenAI(endpoint, options) {
   const maxAttempts = 2;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -348,40 +318,62 @@ async function requestGemini(endpoint, options) {
       });
     } catch (error) {
       console.error(
-        `Gemini network attempt ${attempt}/${maxAttempts} failed:`,
-        describeNetworkError(error)
+        `OpenAI network attempt ${attempt}/${maxAttempts} failed:`,
+        error.message
       );
 
       if (attempt < maxAttempts) {
-        await wait(700);
+        await wait(1500);
         continue;
       }
 
-      throw new Error(
-        `Gemini network failure: ${describeNetworkError(error)}`
-      );
+      throw error;
     }
 
+    // Do not retry quota, authentication, or invalid-model errors.
     if (
       response.ok ||
-      !retryableStatuses.has(response.status) ||
+      ![500, 502, 503, 504].includes(response.status) ||
       attempt === maxAttempts
     ) {
       return response;
     }
 
     console.warn(
-      `Gemini returned HTTP ${response.status}. Retrying once.`
+      `OpenAI returned HTTP ${response.status}; retrying once after 2 seconds.`
     );
 
-    await wait(700);
+    await wait(2000);
   }
 
-  throw new Error('Gemini request failed.');
+  throw new Error('OpenAI request failed.');
+}
+
+function extractOpenAIText(data) {
+  if (typeof data.output_text === 'string' && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+
+  const parts = [];
+
+  for (const item of data.output || []) {
+    if (item.type !== 'message') continue;
+
+    for (const content of item.content || []) {
+      if (
+        content.type === 'output_text' &&
+        typeof content.text === 'string'
+      ) {
+        parts.push(content.text);
+      }
+    }
+  }
+
+  return parts.join('\n').trim();
 }
 
 // ==================================================
-// GEMINI AI NUTRITION ANALYSIS
+// OPENAI NUTRITION ANALYSIS
 // ==================================================
 
 app.post('/api/analyze', async (req, res) => {
@@ -389,9 +381,7 @@ app.post('/api/analyze', async (req, res) => {
   const token = auth.replace(/^Bearer\s+/i, '').trim();
 
   if (!token || !tokens.has(token)) {
-    return res.status(401).json({
-      error: 'Please login again'
-    });
+    return res.status(401).json({ error: 'Please login again' });
   }
 
   const inputDishes = Array.isArray(req.body?.dishes)
@@ -410,78 +400,85 @@ app.post('/api/analyze', async (req, res) => {
     });
   }
 
-  // Fast response for a previously analysed list.
+  // Avoid paying for the same successful analysis repeatedly.
   const cachedItems = getCachedAnalysis(dishes);
 
   if (cachedItems) {
     console.log('Nutrition cache hit:', dishes.join(', '));
-    return res.json({
-      items: cachedItems,
-      cached: true
-    });
+    return res.json({ items: cachedItems, cached: true });
   }
 
   if (!API_KEY) {
-    console.error('GEMINI_API_KEY is missing from .env.');
+    console.error('OPENAI_API_KEY is missing from .env');
 
     return res.status(500).json({
-      error: 'GEMINI_API_KEY is missing from the server environment.'
+      error: 'OPENAI_API_KEY is missing from the server environment.'
     });
   }
 
   const prompt = `
-You are a nutrition assistant for a cafeteria menu.
-Estimate nutrition for one typical serving of each dish:
+You are a nutrition assistant for a cafeteria smart food menu.
+
+Analyze these dishes:
 ${JSON.stringify(dishes)}
 
-Return ONLY a valid JSON array with one object per dish, in the same order.
+Estimate nutrition for one typical serving of each dish.
+
+Return ONLY a valid JSON array with exactly one object per dish,
+in the same order as the input.
+
 Each object must contain:
-"name", "type", "serving_size", "calories", "protein_g",
-"carbs_g", "fat_g", "fibre_g", "vitamins", "minerals", "allergens".
+{
+  "name": "dish name",
+  "type": "veg",
+  "serving_size": "200 g",
+  "calories": 250,
+  "protein_g": 10,
+  "carbs_g": 30,
+  "fat_g": 8,
+  "fibre_g": 4,
+  "vitamins": ["A", "B1", "C"],
+  "minerals": ["Iron", "Calcium", "Potassium"],
+  "allergens": ["Unknown - recipe dependent"]
+}
 
 Rules:
 - type must be exactly "veg", "non-veg", or "vegan".
 - Vegan means no meat, fish, dairy, eggs, or honey.
-- Veg may contain dairy or eggs. Non-veg contains meat or fish.
+- Vegetarian food may contain dairy or eggs.
 - Nutrition values must be numbers.
 - serving_size must be a short string.
-- Include at most 6 vitamins and 5 minerals.
+- Include no more than 6 vitamins and 5 minerals.
 - Mention common allergens when known.
-- If uncertain, use ["Unknown - recipe dependent"].
-- Values are estimates and vary by recipe and portion size.
+- If ingredients are uncertain, use ["Unknown - recipe dependent"].
+- Values are estimates and vary with recipe and portion size.
 - Do not claim food treats or prevents diseases.
 - Return JSON only, without Markdown fences or extra text.
 `;
 
-  const endpoint =
-    'https://generativelanguage.googleapis.com/v1beta/models/' +
-    `${encodeURIComponent(MODEL)}:generateContent`;
-
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': API_KEY
-    },
-    body: JSON.stringify({
-      contents: [{
-        role: 'user',
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.2,
-        maxOutputTokens: 2500
-      }
-    })
-  };
-
   try {
     console.log(
-      `Analysing ${dishes.length} dish(es) using Gemini model ${MODEL}.`
+      `Analysing ${dishes.length} dish(es) using OpenAI model ${MODEL}.`
     );
 
-    const response = await requestGemini(endpoint, requestOptions);
+    const response = await requestOpenAI(
+      'https://api.openai.com/v1/responses',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          instructions: 'Return only a valid JSON array. Do not include Markdown fences.',
+          input: prompt,
+          max_output_tokens: 2500,
+          store: false
+        })
+      }
+    );
+
     const responseText = await response.text();
 
     let data;
@@ -489,66 +486,54 @@ Rules:
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch (_) {
-      console.error(
-        'Gemini returned an unreadable response:',
-        responseText.slice(0, 500)
-      );
+      console.error('OpenAI returned an unreadable response.');
 
       return res.status(502).json({
-        error: 'Gemini returned an unreadable response. Please try again.'
+        error: 'OpenAI returned an unreadable response. Please try again.'
       });
     }
 
     if (!response.ok) {
-      const apiMessage = data?.error?.message ||
-        `Gemini API returned HTTP ${response.status}`;
+      const apiMessage =
+        data?.error?.message ||
+        `OpenAI API returned HTTP ${response.status}`;
 
-      console.error('Gemini API error:', response.status, apiMessage);
+      console.error('OpenAI API error:', response.status, apiMessage);
 
       if (response.status === 429) {
         return res.status(429).json({
-          error: 'Gemini quota or rate limit reached. Wait before trying again.'
+          error: 'OpenAI API quota or rate limit reached. Check your API billing and usage limits.'
         });
       }
 
-      if ([500, 502, 503, 504].includes(response.status)) {
-        return res.status(503).json({
-          error: 'Gemini is temporarily busy. Please try again shortly.'
-        });
-      }
-
-      if ([401, 403].includes(response.status)) {
+      if (response.status === 401 || response.status === 403) {
         return res.status(502).json({
-          error: 'Gemini rejected the API key or access. Check your .env settings.'
+          error: 'OpenAI rejected the API key or access. Check OPENAI_API_KEY and project permissions.'
         });
       }
 
       if (response.status === 404) {
         return res.status(502).json({
-          error: `Gemini model "${MODEL}" was not found or is unavailable. Check GEMINI_MODEL.`
+          error: `OpenAI model "${MODEL}" was not found or is unavailable. Check OPENAI_MODEL.`
         });
       }
 
-      return res.status(502).json({
-        error: apiMessage
-      });
+      if ([500, 502, 503, 504].includes(response.status)) {
+        return res.status(503).json({
+          error: 'OpenAI is temporarily unavailable. Please try again later.'
+        });
+      }
+
+      return res.status(502).json({ error: apiMessage });
     }
 
-    const generatedText = (
-      data.candidates?.[0]?.content?.parts || []
-    )
-      .map(part => part.text || '')
-      .join('')
-      .trim();
+    const generatedText = extractOpenAIText(data);
 
     if (!generatedText) {
-      console.error(
-        'Gemini returned no text. Finish reason:',
-        data.candidates?.[0]?.finishReason || 'unknown'
-      );
+      console.error('OpenAI returned no text.');
 
       return res.status(502).json({
-        error: 'Gemini returned an empty response. Please try again.'
+        error: 'OpenAI returned an empty response. Please try again.'
       });
     }
 
@@ -562,44 +547,35 @@ Rules:
     try {
       items = JSON.parse(cleanedText);
     } catch (_) {
-      console.error(
-        'Gemini returned invalid JSON:',
-        cleanedText.slice(0, 500)
-      );
+      console.error('OpenAI returned invalid JSON:', cleanedText.slice(0, 300));
 
       return res.status(502).json({
-        error: 'Gemini returned an invalid response. Please try again.'
+        error: 'OpenAI returned an invalid response. Please try again.'
       });
     }
 
     if (!Array.isArray(items)) {
       return res.status(502).json({
-        error: 'Gemini returned an unexpected response format.'
+        error: 'OpenAI returned an unexpected response format.'
       });
     }
 
     saveCachedAnalysis(dishes, items);
 
-    return res.json({
-      items,
-      cached: false
-    });
-
+    return res.json({ items, cached: false });
   } catch (error) {
-    console.error(
-      'Gemini connection error:',
-      describeNetworkError(error)
-    );
+    console.error('OpenAI connection error:', error.message);
 
-    const isTimeout =
+    const isTimeout = error && (
       error.name === 'TimeoutError' ||
       error.name === 'AbortError' ||
-      /timeout|timed out/i.test(error.message || '');
+      /timed out|timeout/i.test(error.message || '')
+    );
 
     return res.status(502).json({
       error: isTimeout
-        ? 'Gemini took too long to respond. Check your internet connection and try again.'
-        : 'Could not connect to Gemini. Check the VS Code terminal for the detailed network error.'
+        ? 'OpenAI took too long to respond. Check your internet connection and try again.'
+        : 'Could not connect to OpenAI. Check the VS Code terminal for details.'
     });
   }
 });
@@ -618,9 +594,9 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Cafeteria application running on port ${PORT}`);
-  console.log(`Gemini model configured: ${MODEL}`);
+  console.log(`OpenAI model configured: ${MODEL}`);
 
   if (!API_KEY) {
-    console.warn('WARNING: GEMINI_API_KEY is missing from .env.');
+    console.warn('WARNING: OPENAI_API_KEY is missing from .env');
   }
 });
