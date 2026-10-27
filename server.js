@@ -488,6 +488,7 @@ Include one object per dish, in the same order.
 
 Each item must contain:
 {
+  "available": true,
   "name": "Properly capitalized dish name",
   "type": "veg, non-veg, or vegan",
   "serving_size": "e.g. 200 g",
@@ -501,7 +502,12 @@ Each item must contain:
   "allergens": ["Milk (Dairy)"]
 }
 
+For a dish you cannot confidently identify, return {"available":false,"name":"Original dish name"} instead of guessing nutrition.
+
 Rules:
+- Include one item per input dish, in the same order.
+- Set available to true only when you can identify the dish and estimate its nutrition reliably.
+- Set available to false for unknown, invalid, or ambiguous dish names; do not invent nutrition values.
 - Nutrition figures are estimates for a typical serving.
 - Use numeric values for calories, protein_g, carbs_g, fat_g, and fibre_g.
 - Use vegan only if the dish normally contains no dairy, egg, honey, or meat.
@@ -581,7 +587,13 @@ Rules:
       });
     }
 
-    const items = result.items;
+    const items = dishes.map((dish, index) => {
+      const item = result.items[index];
+
+      return item?.available === true
+        ? { ...item, name: item.name || dish, available: true }
+        : { name: dish, available: false };
+    });
 
     // Save this menu separately for the logged-in counter.
     await db.set('menu:' + req.session.counter, {

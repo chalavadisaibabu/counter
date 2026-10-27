@@ -132,6 +132,9 @@
            justify-content: space-between; gap: .3em; padding: .55em .75em; border-radius: .9em;
            background: linear-gradient(160deg, rgba(30,58,95,.55), rgba(15,30,55,.75));
            border: 1px solid rgba(125,211,252,.25); }
+  .card4.unavailable { justify-content: center; align-items: center; gap: .7em; text-align: center; }
+  .card4.unavailable h2 { justify-content: center; }
+  .unavailable-label { color: #fca5a5; font-size: 1.1em; font-weight: 700; }
   .card4 h2 { font-size: 1.2em; display: flex; align-items: center; gap: .4em; line-height: 1.1; }
   .serving { color: #cbd5e1; font-size: .7em; padding-bottom: .3em; border-bottom: 1px solid rgba(255,255,255,.15); }
   .kcal { font-size: 1.9em; font-weight: 800; color: #6ee7b7; line-height: 1; }
@@ -531,7 +534,11 @@ function fitCards() {
 function render(items) {
   currentItems = (items || []).slice(0, MAX_DISHES);
   $('cBadge').textContent = sget('counter') || '';
-  $('cards').innerHTML = currentItems.map(f => `
+  $('cards').innerHTML = currentItems.map(f => f.available === false ? `
+    <div class="card4 unavailable">
+      <h2>${esc(f.name)}</h2>
+      <p class="unavailable-label">Dish unavailable</p>
+    </div>` : `
     <div class="card4">
       <h2>${esc(f.name)} ${typeIcon(f.type)}</h2>
       <div class="serving">Serving Size: ${esc(f.serving_size || '-')}</div>
