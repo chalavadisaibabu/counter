@@ -2,9 +2,13 @@
   "name": "cafeteria-display",
   "version": "1.0.0",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "express": "^4.21.2",
-    "@upstash/redis": "^1.34.0"
+    "@upstash/redis": "^1.40.0",
+    "dotenv": "^18.0.9",
+    "express": "^4.22.3",
+    "nodemailer": "^10.2.1"
   }
 }

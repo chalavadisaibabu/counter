@@ -4,3 +4,4 @@ node_modules
 users.json
 menus.json
 sessions.json
+.vercel/
