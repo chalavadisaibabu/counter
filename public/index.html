@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Smart Food Menu</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", Arial, sans-serif; background: #0a1628; color: #f1f5f9; min-height: 100vh; }
@@ -16,69 +16,89 @@
           background: #1e293b; color: #fff; font-size: 1rem; }
   .error { color: #f87171; margin-top: 10px; min-height: 1.2em; }
 
-  /* ===== Page 1: Login (light food design) ===== */
-  #login { position: relative; min-height: 100vh; background: #e9ebf0; color: #333;
-           padding: 84px 22px 22px; display: flex; overflow: hidden; }
-  .ghost-title { position: absolute; top: -34px; left: 0; right: 0; text-align: center; line-height: 1;
-                 font-family: 'Playfair Display', Georgia, serif; font-weight: 900;
-                 font-size: clamp(5rem, 15vw, 11rem); color: rgba(0,0,0,.06); pointer-events: none; user-select: none; }
-  .stage { position: relative; z-index: 1; width: 100%; max-width: 1150px; margin: 0 auto; background: #f4f5f8;
-           min-height: calc(100vh - 106px); overflow: hidden; display: flex; flex-direction: column;
-           align-items: center; padding: 34px 24px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.08); }
-  .plate { position: absolute; z-index: 1; border-radius: 50%; border: clamp(8px, 1.2vw, 16px) solid #6cc4b8;
-           background-color: #e8f6f3; background-size: cover; background-position: center;
-           box-shadow: 0 18px 40px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center;
-           font-size: clamp(3rem, 8vw, 7rem); }
-  .p1 { width: min(30vw, 360px); height: min(30vw, 360px); left: max(-12vw, -140px); top: 34%; }
-  .p2 { width: min(26vw, 320px); height: min(26vw, 320px); right: max(-8vw, -90px); top: max(-8vw, -100px); }
-  .p3 { width: min(20vw, 230px); height: min(20vw, 230px); right: max(-5vw, -60px); bottom: 22%; }
-  .logo { position: absolute; z-index: 2; left: 34px; top: 26px; width: 86px; height: 86px; border-radius: 50%;
-          border: 3px solid #d6004f; background: #fff; color: #d6004f; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; text-align: center; font-size: .5rem; font-weight: 800; letter-spacing: .6px; }
-  .logo span { font-size: 1.6rem; line-height: 1.1; }
-  .head { position: relative; z-index: 2; text-align: center; margin-top: 44px; }
-  .head h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 2.3rem; color: #1b1b1f; }
-  .head p { color: #777; font-size: .9rem; margin-top: 8px; }
-  .head .pink { color: #d6004f; font-weight: 700; }
+  /* ===== Page 1: Login (warm food design) ===== */
+  #login { min-height: 100vh; background: #fdf5ee; padding: 5vh 3vw; display: flex; overflow: hidden;
+           font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif; color: #3a2a1d; }
+  .stage { position: relative; width: 100%; max-width: 1180px; margin: 0 auto; background: #fbeadc; border-radius: 6px;
+           display: grid; grid-template-columns: 1fr 1fr; min-height: 88vh; overflow: hidden;
+           box-shadow: 0 25px 60px rgba(180,120,70,.2); }
+  .nav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; justify-content: space-between;
+         align-items: center; padding: 32px 46px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; color: #2b2b2b; }
 
-  .card { position: relative; z-index: 2; margin-top: 34px; width: 420px; max-width: 100%; background: #fff;
-          padding: 42px 38px 32px; border-radius: 4px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
-  .field { position: relative; margin-bottom: 18px; }
-  .field .ic { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #aaa; display: flex; }
-  .field input { width: 100%; height: 52px; padding: 0 48px; border-radius: 999px; border: 1px solid #e6e7ec;
-                 background: #f7f7fa; color: #333; font-size: .95rem; }
-  .field input::placeholder { color: #aeb0b8; }
-  .field input:focus { outline: none; border-color: #d6004f; background: #fff; }
-  .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: 0;
-         padding: 6px; color: #aaa; display: flex; }
-  .eye:hover { color: #d6004f; }
-  .row2 { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: #999; margin: 2px 4px 24px; }
+  .art { position: relative; }
+  .band { position: absolute; left: 44%; width: 33%; top: 0; bottom: 0; background: #f7d6b5; }
+  .plate { position: absolute; border-radius: 50%; aspect-ratio: 1 / 1; background-color: #fff3e6;
+           background-size: cover; background-position: center; display: flex; align-items: center;
+           justify-content: center; font-size: clamp(2.5rem, 6vw, 5rem);
+           box-shadow: 0 22px 40px rgba(120,70,30,.3); }
+  .p1 { width: 36%; left: 6%; top: 40%; border: 9px solid #b9824f; }
+  .p2 { width: 29%; left: 41%; top: 17%; border: 6px solid #fff; }
+  .p3 { width: 25%; left: 39%; top: 62%; border: 6px solid #f6dce4; }
+
+  .formside { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center;
+              padding: 110px 7% 80px 3%; }
+  .formside h1 { font-size: clamp(1.8rem, 3.2vw, 2.7rem); font-weight: 800; line-height: 1.15; width: fit-content;
+                 background: linear-gradient(90deg, #b8651b, #f0a040); -webkit-background-clip: text;
+                 background-clip: text; color: transparent; }
+  .formside .sub { margin: 14px 0 26px; color: #4a3a2c; font-size: 1.02rem; font-weight: 500; }
+  .form { max-width: 430px; width: 100%; }
+
+  .field { position: relative; margin-bottom: 16px; }
+  .field .ic { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #c27a2e; display: flex; pointer-events: none; }
+  .field input, .field select { width: 100%; height: 52px; padding: 0 48px; border-radius: 999px; border: 1.5px solid #e09a4d;
+         background: transparent; color: #4a3a2c; font: 600 .9rem 'Montserrat', 'Segoe UI', Arial, sans-serif; }
+  .field select { appearance: none; -webkit-appearance: none; cursor: pointer;
+         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23c27a2e' stroke-width='2'/></svg>");
+         background-repeat: no-repeat; background-position: right 20px center; }
+  .field select option { color: #333; background: #fff; }
+  .field input::placeholder { color: #a58a70; font-weight: 500; }
+  .field input:focus, .field select:focus { outline: none; background-color: #fff8f1; box-shadow: 0 0 0 3px rgba(224,154,77,.25); }
+  .eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: 0;
+         padding: 6px; color: #c27a2e; display: flex; }
+  .eye:hover { color: #8a4a0e; }
+  .row2 { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; color: #8a6d52;
+          margin: 4px 6px 22px; font-weight: 600; }
   .row2 label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  .row2 input[type=checkbox] { width: 16px; height: 16px; padding: 0; accent-color: #d6004f; }
-  .row2 a, .sec-links a { color: #999; cursor: pointer; font-weight: 700; }
-  .row2 a:hover, .sec-links a:hover { color: #d6004f; }
-  .login-btn { width: 100%; height: 52px; border-radius: 999px; background: #d6004f; color: #fff; font-weight: 800;
-               font-size: .9rem; letter-spacing: 1px; text-transform: uppercase; padding: 0;
-               box-shadow: 0 10px 22px rgba(214,0,79,.35); transition: .2s; }
-  .login-btn:hover { background: #b80043; }
+  .row2 input[type=checkbox] { width: 16px; height: 16px; padding: 0; accent-color: #d9822b; }
+  .row2 a, .sec-links a { color: #a5601a; cursor: pointer; font-weight: 700; }
+  .row2 a:hover, .sec-links a:hover { text-decoration: underline; }
+  .btn-orange { width: 100%; height: 52px; border-radius: 999px; padding: 0; color: #fff; font-weight: 800;
+                font-size: .95rem; letter-spacing: .5px; background: linear-gradient(90deg, #c9741f, #f6a94a);
+                box-shadow: 0 10px 22px rgba(217,130,43,.38); transition: .2s; font-family: inherit; }
+  .btn-orange:hover { filter: brightness(.93); }
   .sec-links { text-align: center; margin-top: 18px; font-size: .85rem; display: flex; justify-content: center; gap: 22px; }
-  .card .help { color: #888; font-size: .85rem; text-align: center; margin-bottom: 20px; }
-  .msg-err { color: #d6004f; margin-top: 14px; min-height: 1.2em; text-align: center; font-size: .85rem; }
-  .msg-ok { color: #16a34a; margin-top: 14px; min-height: 1.2em; text-align: center; font-size: .85rem; }
-  .stfoot { position: relative; z-index: 2; width: 100%; margin-top: auto; padding-top: 16px; border-top: 1px solid #e3e4e8;
-            text-align: right; font-size: .75rem; color: #888; }
-  .stage .spacer { height: 60px; }
+  .form .help { color: #6b5238; font-size: .88rem; margin-bottom: 18px; }
+  .msg-err { color: #c0392b; margin-top: 14px; min-height: 1.2em; font-size: .85rem; font-weight: 600; }
+  .msg-ok { color: #15803d; margin-top: 14px; min-height: 1.2em; font-size: .85rem; font-weight: 600; }
+  .stfoot { position: absolute; z-index: 3; right: 36px; bottom: 16px; display: flex; gap: 18px; align-items: center;
+            flex-wrap: wrap; justify-content: flex-end; font-size: .72rem; color: #a58a70; }
+  .stfoot .sec { color: #8a4a0e; font-weight: 700; display: flex; align-items: center; gap: 5px; }
 
-  /* ===== Page 2: Input ===== */
-  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; background: #1e293b; }
+  /* ===== Page 2: Input (white background, max 8 dishes) ===== */
+  #input { background: #ffffff; color: #1e293b; min-height: 100vh; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px;
+           background: #ffffff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  header h2 { color: #0f172a; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .count { font-size: .85rem; font-weight: 600; color: #64748b; background: #f1f5f9; border-radius: 999px; padding: 4px 12px; }
+  .who { color: #9a5b12; background: #fdebd3; }
+  header .ghost { background: #e2e8f0; color: #1e293b; }
+  header .ghost:hover { background: #cbd5e1; }
   .plus { width: 52px; height: 52px; border-radius: 50%; font-size: 2rem; padding: 0;
           background: #22c55e; color: #052e16; line-height: 1; }
+  .plus:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
   #inputs { max-width: 600px; margin: 30px auto; padding: 0 20px 110px; }
   .row { display: flex; gap: 10px; margin-bottom: 12px; }
-  .row .del { background: #7f1d1d; color: #fff; padding: 0 16px; }
-  .hint { text-align: center; color: #94a3b8; margin-top: 60px; }
-  .submitbar { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #1e293b; text-align: center; }
+  #input .row input { background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; }
+  #input .row input::placeholder { color: #94a3b8; }
+  #input .row input:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+  .row .del { background: #ef4444; color: #fff; padding: 0 16px; }
+  .row .del:hover { background: #dc2626; }
+  .hint { text-align: center; color: #64748b; margin-top: 60px; }
+  .submitbar { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #ffffff;
+               border-top: 1px solid #e2e8f0; box-shadow: 0 -2px 8px rgba(0,0,0,.05); text-align: center; }
   .submitbar button { width: 100%; max-width: 600px; font-size: 1.1rem; }
+  #input .error { color: #dc2626; }
 
   /* ===== Page 3: AI loading ===== */
   #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
@@ -86,52 +106,58 @@
              border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ===== Page 4: Smart Food Menu ===== */
-  #display { background: radial-gradient(circle at top, #10284a 0%, #0a1628 60%); min-height: 100vh; padding: 22px 26px 18px; position: relative; }
-  .menu-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
-  .menu-head h1 { font-size: clamp(1.8rem, 3.2vw, 3rem); font-weight: 800; letter-spacing: 1px; line-height: 1.1; }
-  .menu-head p { color: #7dd3fc; font-size: clamp(.8rem, 1.3vw, 1.2rem); letter-spacing: 1px; margin-top: 6px; }
-  .legend { display: flex; flex-direction: column; gap: 6px; font-size: clamp(.8rem, 1.1vw, 1rem); }
-  .legend div { display: flex; align-items: center; gap: 8px; }
-  .legend .l1 { display: flex; gap: 22px; }
+  /* ===== Page 4: Smart Food Menu (fits screen, no scrolling) ===== */
+  #display { background: radial-gradient(circle at top, #10284a 0%, #0a1628 60%);
+             height: 100vh; height: 100dvh; overflow: hidden; padding: 1.2vh 1.2vw;
+             display: flex; flex-direction: column; gap: 1vh; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 1.5vw; flex: none; }
+  .topbar h1 { font-size: 4.6vh; font-weight: 800; letter-spacing: 1px; line-height: 1.05; white-space: nowrap; }
+  .cbadge { font-size: .5em; background: #22c55e; color: #052e16; border-radius: 999px; padding: .1em .7em;
+            vertical-align: middle; margin-left: .5em; font-weight: 700; letter-spacing: 0; }
+  .topbar p { color: #7dd3fc; font-size: 1.9vh; letter-spacing: 1px; margin-top: .3vh; white-space: nowrap; }
+  .legend { display: flex; flex-direction: column; gap: .4vh; font-size: 1.9vh; }
+  .legend div { display: flex; align-items: center; gap: .5em; }
+  .legend .l1 { display: flex; gap: 1.5em; }
   .leaf { width: 1.3em; height: 1.3em; fill: #22c55e; flex: none; }
   .leaf.vegan { fill: #84cc16; }
-  .nv { font-size: 1.3em; line-height: 1; }
-  #cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .card4 { background: linear-gradient(160deg, rgba(30,58,95,.55), rgba(15,30,55,.75));
-          border: 1px solid rgba(125,211,252,.25); border-radius: 18px; padding: 16px 20px; }
-  .card4 h2 { font-size: clamp(1.2rem, 2.2vw, 2rem); display: flex; align-items: center; gap: 10px; }
-  .serving { color: #cbd5e1; font-size: clamp(.8rem, 1.1vw, 1rem); margin: 4px 0 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.15); }
-  .kcal { font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 800; color: #6ee7b7; line-height: 1.1; }
-  .kcal small { font-size: .4em; font-weight: 400; color: #cbd5e1; margin-left: 6px; }
-  .macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
-  .macro { text-align: center; border-radius: 10px; padding: 6px 2px; border: 1.5px solid; }
-  .macro span { display: block; font-size: clamp(.7rem, 1vw, .95rem); }
-  .macro b { display: block; font-size: clamp(1rem, 1.6vw, 1.5rem); color: #fff; }
-  .m-protein { border-color: #3b82f6; background: rgba(59,130,246,.15); } .m-protein span { color: #93c5fd; }
-  .m-carbs   { border-color: #22c55e; background: rgba(34,197,94,.15); }  .m-carbs span   { color: #86efac; }
-  .m-fat     { border-color: #eab308; background: rgba(234,179,8,.15); }  .m-fat span     { color: #fde047; }
-  .m-fibre   { border-color: #8b5cf6; background: rgba(139,92,246,.18); } .m-fibre span   { color: #c4b5fd; }
-  .info { border-top: 1px solid rgba(255,255,255,.15); padding-top: 8px; font-size: clamp(.75rem, 1.05vw, .95rem); color: #cbd5e1; line-height: 1.6; }
-  .info b { color: #fff; }
-  .allergen { margin-top: 10px; display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px;
-              background: rgba(127,29,29,.45); border: 1px solid rgba(239,68,68,.5); font-size: clamp(.75rem, 1.05vw, .95rem); }
-  .allergen .warn { flex: none; width: 2em; height: 2em; fill: #ef4444; }
-  .allergen b { color: #fca5a5; }
-  .foot { text-align: center; color: #64748b; font-size: .8rem; margin-top: 12px; }
-
-  /* Edit / Fullscreen buttons (bigger) */
-  .controls { display: flex; justify-content: flex-end; gap: 14px; margin-bottom: 14px; }
-  .controls button { padding: 16px 34px; font-size: 1.3rem; font-weight: bold; border-radius: 12px;
+  .nv { font-size: 1.15em; line-height: 1; }
+  .controls { display: flex; gap: 1vw; flex: none; }
+  .controls button { padding: 1.4vh 2vw; font-size: max(2.4vh, 15px); font-weight: bold; border-radius: 12px;
                      background: #334155; color: #fff; border: 2px solid #64748b; transition: .2s; }
   .controls button:hover { background: #22c55e; color: #052e16; border-color: #22c55e; }
   :fullscreen .controls { display: none; }
 
-  @media (max-width: 800px) {
-    #cards { grid-template-columns: 1fr; }
-    .logo, .p3 { display: none; }
-    .card { padding: 34px 22px 26px; }
-    .head { margin-top: 20px; }
+  #cards { flex: 1; min-height: 0; display: grid; gap: .9vh .9vw; font-size: var(--fs, 16px); }
+  .card4 { min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+           justify-content: space-between; gap: .3em; padding: .55em .75em; border-radius: .9em;
+           background: linear-gradient(160deg, rgba(30,58,95,.55), rgba(15,30,55,.75));
+           border: 1px solid rgba(125,211,252,.25); }
+  .card4 h2 { font-size: 1.2em; display: flex; align-items: center; gap: .4em; line-height: 1.1; }
+  .serving { color: #cbd5e1; font-size: .7em; padding-bottom: .3em; border-bottom: 1px solid rgba(255,255,255,.15); }
+  .kcal { font-size: 1.9em; font-weight: 800; color: #6ee7b7; line-height: 1; }
+  .kcal small { font-size: .38em; font-weight: 400; color: #cbd5e1; margin-left: .3em; }
+  .macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: .3em; }
+  .macro { text-align: center; border-radius: .5em; padding: .25em 0; border: 1.5px solid; }
+  .macro span { display: block; font-size: .6em; }
+  .macro b { display: block; font-size: .95em; color: #fff; }
+  .m-protein { border-color: #3b82f6; background: rgba(59,130,246,.15); } .m-protein span { color: #93c5fd; }
+  .m-carbs   { border-color: #22c55e; background: rgba(34,197,94,.15); }  .m-carbs span   { color: #86efac; }
+  .m-fat     { border-color: #eab308; background: rgba(234,179,8,.15); }  .m-fat span     { color: #fde047; }
+  .m-fibre   { border-color: #8b5cf6; background: rgba(139,92,246,.18); } .m-fibre span   { color: #c4b5fd; }
+  .info { border-top: 1px solid rgba(255,255,255,.15); padding-top: .3em; font-size: .68em; color: #cbd5e1; line-height: 1.35; }
+  .info b { color: #fff; }
+  .allergen { display: flex; gap: .5em; align-items: center; padding: .4em .5em; border-radius: .5em;
+              background: rgba(127,29,29,.45); border: 1px solid rgba(239,68,68,.5); font-size: .65em; line-height: 1.25; }
+  .allergen .warn { flex: none; width: 1.8em; height: 1.8em; fill: #ef4444; }
+  .allergen b { color: #fca5a5; }
+  .foot { flex: none; text-align: center; color: #64748b; font-size: 1.6vh; }
+
+  @media (max-width: 820px) {
+    .stage { grid-template-columns: 1fr; min-height: auto; }
+    .art { display: none; }
+    .formside { padding: 100px 24px 90px; }
+    .nav { padding: 20px 22px; }
+    .stfoot { right: 0; left: 0; bottom: 12px; justify-content: center; gap: 4px 14px; padding: 0 16px; text-align: center; }
   }
 </style>
 </head>
@@ -139,72 +165,84 @@
 
 <!-- PAGE 1: LOGIN -->
 <div id="login">
-  <div class="ghost-title" id="ghostTitle">Login</div>
   <div class="stage">
-    <div class="plate p1" id="p1"></div>
-    <div class="plate p2" id="p2"></div>
-    <div class="plate p3" id="p3"></div>
-
-    <div class="logo"><span>🍽️</span>CAFETERIA<br>SMART MENU</div>
-
-    <div class="head">
-      <h1 id="headTitle">Login</h1>
-      <p id="headSub"></p>
+    <div class="nav">
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#2b2b2b" stroke-width="3">
+          <path d="M16 5L29 28H3z"/><circle cx="28" cy="28" r="6" stroke="#aaa" stroke-width="2"/>
+        </svg>
+        <span>Smart Menu</span>
+      </div>
     </div>
 
-    <div class="card">
-      <!-- Login panel -->
-      <div id="pLogin">
-        <div class="field" data-ic="user"><input id="user" placeholder="Username" autocomplete="username"></div>
-        <div class="field" data-ic="lock" data-eye><input id="pass" type="password" placeholder="Password" autocomplete="current-password"></div>
-        <div class="row2">
-          <label><input type="checkbox" id="remember"> Remember me</label>
-          <a onclick="showPanel('pForgot')">Forgot Password?</a>
-        </div>
-        <button class="login-btn" onclick="login()">Login</button>
-      </div>
-
-      <!-- Forgot password panel -->
-      <div id="pForgot" class="hidden">
-        <p class="help">Enter your username. A 6-digit reset code will be sent.</p>
-        <div class="field" data-ic="user"><input id="fUser" placeholder="Username"></div>
-        <button class="login-btn" onclick="forgot()">Send Reset Code</button>
-        <div class="sec-links">
-          <a onclick="showPanel('pLogin')">← Back to login</a>
-          <a onclick="showPanel('pReset')">I have a code</a>
-        </div>
-      </div>
-
-      <!-- Reset password panel -->
-      <div id="pReset" class="hidden">
-        <div class="field" data-ic="user"><input id="rUser" placeholder="Username"></div>
-        <div class="field" data-ic="lock"><input id="rCode" placeholder="6-digit reset code" inputmode="numeric" maxlength="6"></div>
-        <div class="field" data-ic="lock" data-eye><input id="rPass" type="password" placeholder="New password (min 6 characters)"></div>
-        <div class="field" data-ic="lock" data-eye><input id="rPass2" type="password" placeholder="Confirm new password"></div>
-        <button class="login-btn" onclick="resetPassword()">Reset Password</button>
-        <div class="sec-links"><a onclick="showPanel('pLogin')">← Back to login</a></div>
-      </div>
-
-      <div class="msg-err" id="loginErr"></div>
-      <div class="msg-ok" id="loginOk"></div>
+    <div class="art">
+      <div class="band"></div>
+      <div class="plate p1" id="p1"></div>
+      <div class="plate p2" id="p2"></div>
+      <div class="plate p3" id="p3"></div>
     </div>
 
-    <div class="spacer"></div>
-    <div class="stfoot">© 2026 Cafeteria Smart Food Menu. All rights reserved.</div>
+    <div class="formside">
+      <h1 id="headTitle">Craving Something?</h1>
+      <p class="sub" id="headSub"></p>
+
+      <div class="form">
+        <!-- Login panel -->
+        <div id="pLogin">
+          <div class="field" data-ic="store"><select id="counter"></select></div>
+          <div class="field" data-ic="user"><input id="user" placeholder="Username" autocomplete="username"></div>
+          <div class="field" data-ic="lock" data-eye><input id="pass" type="password" placeholder="Password" autocomplete="current-password"></div>
+          <div class="row2">
+            <label><input type="checkbox" id="remember"> Remember me</label>
+            <a onclick="showPanel('pForgot')">Forgot Password?</a>
+          </div>
+          <button class="btn-orange" onclick="login()">Login</button>
+        </div>
+
+        <!-- Forgot password panel -->
+        <div id="pForgot" class="hidden">
+          <p class="help">Enter your username. A 6-digit reset code will be sent.</p>
+          <div class="field" data-ic="user"><input id="fUser" placeholder="Username"></div>
+          <button class="btn-orange" onclick="forgot()">Send Reset Code</button>
+          <div class="sec-links">
+            <a onclick="showPanel('pLogin')">← Back to login</a>
+            <a onclick="showPanel('pReset')">I have a code</a>
+          </div>
+        </div>
+
+        <!-- Reset password panel -->
+        <div id="pReset" class="hidden">
+          <div class="field" data-ic="user"><input id="rUser" placeholder="Username"></div>
+          <div class="field" data-ic="lock"><input id="rCode" placeholder="6-digit reset code" inputmode="numeric" maxlength="6"></div>
+          <div class="field" data-ic="lock" data-eye><input id="rPass" type="password" placeholder="New password (min 6 characters)"></div>
+          <div class="field" data-ic="lock" data-eye><input id="rPass2" type="password" placeholder="Confirm new password"></div>
+          <button class="btn-orange" onclick="resetPassword()">Reset Password</button>
+          <div class="sec-links"><a onclick="showPanel('pLogin')">← Back to login</a></div>
+        </div>
+
+        <div class="msg-err" id="loginErr"></div>
+        <div class="msg-ok" id="loginOk"></div>
+      </div>
+    </div>
+
+    <div class="stfoot">
+      <span>© 2026 Cafeteria Smart Food Menu. All rights reserved.</span>
+      <span class="sec">🔒 Secured by ACS Technologies</span>
+    </div>
   </div>
 </div>
 
-<!-- PAGE 2: INPUT -->
+<!-- PAGE 2: INPUT (max 8 dishes) -->
 <div id="input" class="hidden">
   <header>
-    <h2>Enter Food Items</h2>
+    <h2>Enter Food Items <span class="count" id="count">0 / 8</span> <span class="count who" id="who"></span></h2>
     <div>
       <button class="ghost" onclick="logout()">Logout</button>
-      <button class="plus" title="Add dish" onclick="addRow()">+</button>
+      <button class="plus" id="plusBtn" title="Add dish (max 8)" onclick="addRow()">+</button>
     </div>
   </header>
   <div id="inputs">
-    <p class="hint" id="hint">Click the + button (top right) to add a dish</p>
+    <p class="hint" id="hint">Click the + button (top right) to add a dish (maximum 8)</p>
   </div>
   <div class="submitbar">
     <div class="error" id="inputErr" style="margin:0 0 8px"></div>
@@ -218,15 +256,11 @@
   <h2>AI is analysing your food items...</h2>
 </div>
 
-<!-- PAGE 4: SMART FOOD MENU -->
+<!-- PAGE 4: SMART FOOD MENU (fits screen) -->
 <div id="display" class="hidden">
-  <div class="controls">
-    <button class="ghost" onclick="goBack()">Edit</button>
-    <button class="ghost" onclick="toggleFull()">Fullscreen</button>
-  </div>
-  <div class="menu-head">
+  <div class="topbar">
     <div>
-      <h1>SMART FOOD MENU</h1>
+      <h1>SMART FOOD MENU <span class="cbadge" id="cBadge"></span></h1>
       <p>NUTRITION FACTS &amp; ALLERGEN INFORMATION</p>
     </div>
     <div class="legend">
@@ -236,20 +270,36 @@
       </div>
       <div>__LEAFV__ Vegan Friendly</div>
     </div>
+    <div class="controls">
+      <button class="ghost" onclick="goBack()">Edit</button>
+      <button class="ghost" onclick="toggleFull()">Fullscreen</button>
+    </div>
   </div>
   <div id="cards"></div>
   <div class="foot">* Approximate values per serving. Recipes may vary.</div>
 </div>
 
 <script>
+const MAX_DISHES = 8;
 const $ = id => document.getElementById(id);
 const pages = ['login', 'input', 'loading', 'display'];
+let currentPage = 'login';
+let currentItems = [];
+let counterNames = [];
+// "Two Good" / "twogood" / "TWO GOOD" all become "twogood"
+const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 function show(p) {
+  currentPage = p;
   pages.forEach(x => $(x).classList.toggle('hidden', x !== p));
   if (p === 'login') { loadPlates(); prefillUser(); }
 }
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
-function token() { return localStorage.getItem('token') || sessionStorage.getItem('token'); }
+
+// session values live in localStorage (Remember me) or sessionStorage (this session only)
+function sget(k) { return localStorage.getItem(k) || sessionStorage.getItem(k); }
+function token() { return sget('token'); }
+function authH() { return { Authorization: 'Bearer ' + token() }; }
 
 const LEAF = '<svg class="leaf" viewBox="0 0 24 24"><path d="M20 3C9 3 4 9 4 15c0 1.5.4 2.8 1 3.9C7 14 11 11 15 10c-3 2-5.5 5-7 9 1 .6 2.2 1 3.5 1 7 0 9-7 9-17z"/></svg>';
 const LEAFV = LEAF.replace('class="leaf"', 'class="leaf vegan"');
@@ -257,12 +307,13 @@ const WARN = '<svg class="warn" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z
 document.querySelector('.legend').innerHTML = document.querySelector('.legend').innerHTML
   .replace('__LEAF__', LEAF).replace('__LEAFV__', LEAFV);
 
-// ---------- Input field icons + show/hide password ----------
+// ---------- Field icons + show/hide password ----------
 const S = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
-  user: `<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>`,
-  lock: `<svg ${S}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`,
-  eye:  `<svg ${S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`
+  user:  `<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>`,
+  lock:  `<svg ${S}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`,
+  store: `<svg ${S}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+  eye:   `<svg ${S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`
 };
 document.querySelectorAll('.field').forEach(f => {
   const input = f.querySelector('input');
@@ -273,8 +324,8 @@ document.querySelectorAll('.field').forEach(f => {
   }
 });
 
-// ---------- Login page: random food plates ----------
-const EMOJIS = ['🍕','🍔','🍛','🥗','🍜','🍣','🥘','🌮','🍩','🍎','🥞','🍰','🍗','🥪','🍝','🧁'];
+// ---------- Login page: food plates + counter dropdown ----------
+const EMOJIS = ['🥟','🥞','🍨','🍕','🍔','🍛','🥗','🍜','🍣','🥘','🌮','🍩','🍰','🍗','🍝','🧁'];
 const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 async function loadPlates() {
   let imgs = [];
@@ -286,16 +337,30 @@ async function loadPlates() {
     else { el.style.backgroundImage = 'none'; el.textContent = e[i]; }
   });
 }
+async function loadCounters() {
+  try { counterNames = (await (await fetch('/api/counters')).json()).counters || []; } catch (e) { counterNames = []; }
+  $('counter').innerHTML = '<option value="" disabled selected>Select your counter</option>' +
+    counterNames.map(c => `<option>${esc(c)}</option>`).join('');
+  const last = localStorage.getItem('last_counter');
+  if (counterNames.includes(last)) $('counter').value = last;
+}
+// choosing a counter fills in that counter's username (you only type the password)
+$('counter').addEventListener('change', () => {
+  const u = $('user').value.trim();
+  if (!u || counterNames.some(c => norm(c) === norm(u))) $('user').value = norm($('counter').value);
+  $('pass').focus();
+});
 function prefillUser() {
   const u = localStorage.getItem('remember_user');
   if (u) { $('user').value = u; $('remember').checked = true; }
+  else if ($('counter').value && !$('user').value) $('user').value = norm($('counter').value);
 }
 
 // ---------- Login / Forgot / Reset ----------
 const HEAD = {
-  pLogin:  ['Login', 'Manage today\'s menu with <span class="pink">AI nutrition facts</span> for every dish'],
-  pForgot: ['Forgot Password', 'We will send a <span class="pink">6-digit code</span> to reset your password'],
-  pReset:  ['Reset Password', 'Enter the code and choose a <span class="pink">new password</span>']
+  pLogin:  ['Craving Something?', 'Pick your counter and log in to update the menu'],
+  pForgot: ['Forgot Password?', 'We will send a 6-digit code to reset your password'],
+  pReset:  ['Reset Password', 'Enter the code and choose a new password']
 };
 function setMsg(text, isErr) {
   $('loginErr').textContent = isErr ? text : '';
@@ -304,8 +369,7 @@ function setMsg(text, isErr) {
 function showPanel(id) {
   ['pLogin', 'pForgot', 'pReset'].forEach(p => $(p).classList.toggle('hidden', p !== id));
   $('headTitle').textContent = HEAD[id][0];
-  $('ghostTitle').textContent = HEAD[id][0];
-  $('headSub').innerHTML = HEAD[id][1];
+  $('headSub').textContent = HEAD[id][1];
   setMsg('', true);
 }
 showPanel('pLogin');
@@ -316,21 +380,25 @@ async function post(url, body) {
 }
 async function login() {
   setMsg('', true);
-  const username = $('user').value;
-  const { ok, data } = await post('/api/login', { username, password: $('pass').value });
+  const counter = $('counter').value, username = $('user').value.trim();
+  if (!counter) return setMsg('Please select your counter', true);
+  if (!username || !$('pass').value) return setMsg('Enter username and password', true);
+
+  const remember = $('remember').checked;
+  const { ok, data } = await post('/api/login', { username, password: $('pass').value, counter, remember });
   if (!ok) return setMsg(data.error, true);
 
-  if ($('remember').checked) {           // Remember me: stay logged in after closing / reboot
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('remember_user', username);
-    sessionStorage.removeItem('token');
-  } else {                               // only for this browser session
-    sessionStorage.setItem('token', data.token);
-    localStorage.removeItem('token');
-    localStorage.removeItem('remember_user');
-  }
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  store.setItem('token', data.token); store.setItem('counter', data.counter); store.setItem('uname', data.name);
+  ['token', 'counter', 'uname'].forEach(k => other.removeItem(k));
+  localStorage.setItem('last_counter', counter);
+  if (remember) localStorage.setItem('remember_user', username); else localStorage.removeItem('remember_user');
+
   $('pass').value = '';
-  show('input');
+  clearInputs();
+  setWho();
+  await loadMenuAndShow();
 }
 async function forgot() {
   const username = $('fUser').value.trim();
@@ -355,32 +423,74 @@ $('pass').addEventListener('keydown', e => e.key === 'Enter' && login());
 $('user').addEventListener('keydown', e => e.key === 'Enter' && $('pass').focus());
 $('fUser').addEventListener('keydown', e => e.key === 'Enter' && forgot());
 $('rPass2').addEventListener('keydown', e => e.key === 'Enter' && resetPassword());
+
 function logout() {
-  localStorage.removeItem('token'); sessionStorage.removeItem('token'); localStorage.removeItem('items');
+  if (token()) fetch('/api/logout', { method: 'POST', headers: authH() }).catch(() => {});
+  ['token', 'counter', 'uname'].forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
+  localStorage.removeItem('items');
+  currentItems = [];
+  clearInputs();
   showPanel('pLogin'); show('login');
 }
 
-// ---------- Input page ----------
+// after login / on page load: show the saved menu of this counter, or the input page if there is none
+async function loadMenuAndShow() {
+  try {
+    const r = await fetch('/api/menu', { headers: authH() });
+    if (r.status === 401) { logout(); return; }
+    const d = await r.json();
+    if (d.items && d.items.length) { localStorage.setItem('items', JSON.stringify(d.items)); render(d.items); }
+    else show('input');
+  } catch (e) {                                        // server not reachable: use the last saved copy
+    const saved = localStorage.getItem('items');
+    if (saved) { try { render(JSON.parse(saved)); return; } catch (_) {} }
+    show('input');
+  }
+}
+
+// ---------- Input page (max 8 dishes) ----------
+function setWho() { $('who').textContent = (sget('counter') || '') + (sget('uname') && sget('uname') !== sget('counter') ? ' · ' + sget('uname') : ''); }
+function updateCount() {
+  const n = document.querySelectorAll('.dish').length;
+  $('count').textContent = `${n} / ${MAX_DISHES}`;
+  $('plusBtn').disabled = n >= MAX_DISHES;
+}
+function clearInputs() {
+  $('inputs').innerHTML = '<p class="hint" id="hint">Click the + button (top right) to add a dish (maximum 8)</p>';
+  $('inputErr').textContent = '';
+  updateCount();
+}
 function addRow(value = '') {
+  if (document.querySelectorAll('.dish').length >= MAX_DISHES) {
+    $('inputErr').textContent = `Maximum ${MAX_DISHES} dishes allowed`;
+    return;
+  }
+  $('inputErr').textContent = '';
   $('hint')?.remove();
   const row = document.createElement('div');
   row.className = 'row';
   row.innerHTML = `<input class="dish" placeholder="Enter dish name (e.g. Masala Dosa)" value="${esc(value)}">
-                   <button class="del" onclick="this.parentElement.remove()">✕</button>`;
+                   <button class="del" onclick="removeRow(this)">✕</button>`;
   $('inputs').appendChild(row);
   row.querySelector('input').focus();
+  updateCount();
+}
+function removeRow(btn) {
+  btn.parentElement.remove();
+  $('inputErr').textContent = '';
+  updateCount();
 }
 
 async function submitDishes() {
   $('inputErr').textContent = '';
-  const dishes = [...document.querySelectorAll('.dish')].map(i => i.value.trim()).filter(Boolean);
+  const dishes = [...document.querySelectorAll('.dish')].map(i => i.value.trim()).filter(Boolean).slice(0, MAX_DISHES);
   if (!dishes.length) return $('inputErr').textContent = 'Please add at least one dish (use the + button)';
 
   show('loading');
   try {
     const r = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token() },
+      headers: { 'Content-Type': 'application/json', ...authH() },
       body: JSON.stringify({ dishes })
     });
     const d = await r.json();
@@ -394,14 +504,34 @@ async function submitDishes() {
   }
 }
 
-// ---------- Display page (Smart Food Menu) ----------
+// ---------- Display page (fits the screen, no scrolling) ----------
 function typeIcon(t) {
   if (t === 'non-veg') return '<span class="nv">🐔</span>';
   if (t === 'vegan') return LEAFV;
   return LEAF;
 }
+function layoutGrid(n) {
+  const landscape = innerWidth >= innerHeight;
+  const cols = landscape ? ({ 1: 1, 2: 2, 3: 3, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4 }[n] || 4) : (n <= 2 ? 1 : 2);
+  const rows = Math.ceil(n / cols);
+  const g = $('cards');
+  g.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+  g.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+}
+function fitCards() {
+  const g = $('cards');
+  if (!g.children.length) return;
+  let fs = 26;
+  g.style.setProperty('--fs', fs + 'px');
+  while (fs > 5 && [...g.children].some(c => c.scrollHeight > c.clientHeight + 1 || c.scrollWidth > c.clientWidth + 1)) {
+    fs -= 0.5;
+    g.style.setProperty('--fs', fs + 'px');
+  }
+}
 function render(items) {
-  $('cards').innerHTML = items.map(f => `
+  currentItems = (items || []).slice(0, MAX_DISHES);
+  $('cBadge').textContent = sget('counter') || '';
+  $('cards').innerHTML = currentItems.map(f => `
     <div class="card4">
       <h2>${esc(f.name)} ${typeIcon(f.type)}</h2>
       <div class="serving">Serving Size: ${esc(f.serving_size || '-')}</div>
@@ -419,17 +549,46 @@ function render(items) {
       <div class="allergen">${WARN}<div><b>Allergens:</b> ${esc((f.allergens || ['None known']).join(', '))}</div></div>
     </div>`).join('');
   show('display');
+  layoutGrid(currentItems.length);
+  fitCards();
 }
-function goBack() { show('input'); }
+function relayout() {
+  if (currentPage !== 'display') return;
+  layoutGrid(currentItems.length);
+  fitCards();
+}
+window.addEventListener('resize', relayout);
+document.addEventListener('fullscreenchange', () => setTimeout(relayout, 150));
+
+function goBack() {
+  show('input');
+  if (!document.querySelectorAll('.dish').length) currentItems.forEach(f => addRow(f.name));   // pre-fill current dishes
+}
 function toggleFull() {
   document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 }
 
+// TV auto-update: when someone changes this counter's menu from another device
+setInterval(async () => {
+  if (currentPage !== 'display' || !token()) return;
+  try {
+    const r = await fetch('/api/menu', { headers: authH() });
+    if (r.status === 401) return logout();
+    const d = await r.json();
+    const items = d.items || [];
+    if (items.length && JSON.stringify(items) !== JSON.stringify(currentItems)) {
+      localStorage.setItem('items', JSON.stringify(items));
+      render(items);
+    }
+  } catch (e) {}
+}, 20000);
+
 // ---------- On page load ----------
-(function init() {
+(async function init() {
+  await loadCounters();
   if (!token()) return show('login');
-  const saved = localStorage.getItem('items');
-  if (saved) { try { render(JSON.parse(saved)); } catch (e) { show('input'); } } else show('input');
+  setWho();
+  await loadMenuAndShow();
 })();
 </script>
 </body>

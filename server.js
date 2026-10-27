@@ -4,156 +4,248 @@ require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
 const path = require('path');
-const fs = require('fs');
+const { Redis } = require('@upstash/redis');
 
 const app = express();
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==================================================
-// CONFIGURATION
-// ==================================================
+/* ---------- CONFIGURATION ---------- */
 
-const PORT = Number(process.env.PORT || 3000);
-const USER_DEFAULT = process.env.APP_USER || 'admin';
-const PASS_DEFAULT = process.env.APP_PASS || 'admin123';
+const API_KEY = process.env.OPENAI_API_KEY;
+const MODEL = process.env.MODEL || 'gpt-6-luna';
 
-const API_KEY = (process.env.OPENAI_API_KEY || '').trim();
-const MODEL = (process.env.OPENAI_MODEL || 'gpt-4.1-mini').trim();
+const COUNTERS = (
+  process.env.COUNTERS ||
+  "Two Good,Uttardakshin,Tandoor,Woker,Combo,Chef's Library,Tripet"
+).split(',').map(s => s.trim()).filter(Boolean);
 
-const USERS_FILE = path.join(__dirname, 'users.json');
+const COUNTER_PASS = process.env.COUNTER_PASS || 'Bms@2026';
+const ADMIN_USER = process.env.APP_USER || 'admin';
+const ADMIN_PASS = process.env.APP_PASS;
+
 const IMG_DIR = path.join(__dirname, 'public', 'images');
 
-const tokens = new Set();
-let user;
-let resetState = null;
+/* ---------- HELPERS ---------- */
 
-// Successful nutrition results are cached for 6 hours.
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const nutritionCache = new Map();
+const sha = value =>
+  crypto.createHash('sha256').update(value).digest('hex');
 
-// ==================================================
-// CACHE HELPERS
-// ==================================================
-
-function cacheKeyForDishes(dishes) {
-  return dishes
-    .map(d => d.toLowerCase().replace(/\s+/g, ' ').trim())
-    .join('|');
-}
-
-function getCachedAnalysis(dishes) {
-  const key = cacheKeyForDishes(dishes);
-  const entry = nutritionCache.get(key);
-
-  if (!entry) return null;
-
-  if (Date.now() - entry.savedAt > CACHE_TTL_MS) {
-    nutritionCache.delete(key);
-    return null;
-  }
-
-  return entry.items;
-}
-
-function saveCachedAnalysis(dishes, items) {
-  if (nutritionCache.size >= 200) {
-    const oldestKey = nutritionCache.keys().next().value;
-    if (oldestKey) nutritionCache.delete(oldestKey);
-  }
-
-  nutritionCache.set(cacheKeyForDishes(dishes), {
-    savedAt: Date.now(),
-    items
-  });
-}
-
-// ==================================================
-// PASSWORD HELPERS
-// ==================================================
+const norm = value =>
+  String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 function hash(password) {
   const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = crypto
-    .scryptSync(password, salt, 32)
-    .toString('hex');
-
-  return `${salt}:${passwordHash}`;
+  return salt + ':' +
+    crypto.scryptSync(String(password), salt, 32).toString('hex');
 }
 
 function verify(password, stored) {
   try {
-    if (typeof stored !== 'string') return false;
+    if (!stored || typeof stored !== 'string') return false;
 
-    const parts = stored.split(':');
-    if (parts.length !== 2) return false;
+    const [salt, hex] = stored.split(':');
+    if (!salt || !hex) return false;
 
-    const [salt, savedHash] = parts;
+    const actual = crypto.scryptSync(String(password), salt, 32);
+    const expected = Buffer.from(hex, 'hex');
 
-    if (!salt || !/^[a-f0-9]{64}$/i.test(savedHash)) {
-      return false;
-    }
-
-    const calculatedHash = crypto.scryptSync(password, salt, 32);
-    const expectedHash = Buffer.from(savedHash, 'hex');
-
-    return calculatedHash.length === expectedHash.length &&
-      crypto.timingSafeEqual(calculatedHash, expectedHash);
-  } catch (_) {
+    return actual.length === expected.length &&
+      crypto.timingSafeEqual(actual, expected);
+  } catch {
     return false;
   }
 }
 
-// ==================================================
-// USER STORAGE
-// ==================================================
+const h = fn => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(error => {
+    console.error('Server error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
-function saveUser() {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(user, null, 2));
-}
+/* ---------- STORAGE: UPSTASH REDIS ---------- */
 
-function loadUser() {
-  if (fs.existsSync(USERS_FILE)) {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  }
+const REDIS_URL =
+  process.env.KV_REST_API_URL ||
+  process.env.UPSTASH_REDIS_REST_URL;
 
-  const initialUser = {
-    username: USER_DEFAULT,
-    password: hash(PASS_DEFAULT),
-    email: process.env.ADMIN_EMAIL || ''
+const REDIS_TOKEN =
+  process.env.KV_REST_API_TOKEN ||
+  process.env.UPSTASH_REDIS_REST_TOKEN;
+
+let db;
+
+if (REDIS_URL && REDIS_TOKEN) {
+  const redis = new Redis({
+    url: REDIS_URL,
+    token: REDIS_TOKEN
+  });
+
+  db = {
+    get: key => redis.get(key),
+
+    set: (key, value, seconds) =>
+      seconds
+        ? redis.set(key, value, { ex: seconds })
+        : redis.set(key, value),
+
+    del: key => redis.del(key)
   };
 
-  fs.writeFileSync(USERS_FILE, JSON.stringify(initialUser, null, 2));
-  return initialUser;
+  console.log('Upstash Redis storage enabled.');
+} else {
+  // Local testing only. Memory is cleared when the server restarts.
+  console.warn(
+    'Redis environment variables missing. Using temporary memory storage.'
+  );
+
+  const memory = new Map();
+
+  db = {
+    async get(key) {
+      const entry = memory.get(key);
+
+      if (!entry) return null;
+
+      if (entry.expires && entry.expires <= Date.now()) {
+        memory.delete(key);
+        return null;
+      }
+
+      return JSON.parse(entry.value);
+    },
+
+    async set(key, value, seconds) {
+      memory.set(key, {
+        value: JSON.stringify(value),
+        expires: seconds ? Date.now() + seconds * 1000 : 0
+      });
+    },
+
+    async del(key) {
+      memory.delete(key);
+    }
+  };
 }
 
-try {
-  user = loadUser();
-} catch (error) {
-  console.error('Could not load users.json:', error.message);
-  process.exit(1);
+/* ---------- USERS ---------- */
+
+let seeding;
+
+async function ensureUsers() {
+  if (!seeding) {
+    seeding = (async () => {
+      const data = (await db.get('users')) || { users: [] };
+      let changed = false;
+
+      if (!Array.isArray(data.users)) {
+        data.users = [];
+        changed = true;
+      }
+
+      function addUser(username, password, name, counters) {
+        if (!data.users.some(
+          user => norm(user.username) === norm(username)
+        )) {
+          data.users.push({
+            username,
+            password: hash(password),
+            name,
+            email: '',
+            counters
+          });
+
+          changed = true;
+        }
+      }
+
+      // Create admin only when APP_PASS is configured.
+      if (ADMIN_PASS) {
+        addUser(ADMIN_USER, ADMIN_PASS, 'Admin', 'all');
+      }
+
+      // Each counter gets its own login.
+      COUNTERS.forEach(counter => {
+        addUser(norm(counter), COUNTER_PASS, counter, [counter]);
+      });
+
+      if (changed) {
+        await db.set('users', data);
+      }
+    })().catch(error => {
+      seeding = null;
+      throw error;
+    });
+  }
+
+  return seeding;
 }
 
-// ==================================================
-// PASSWORD RESET EMAIL
-// ==================================================
+async function getUsers() {
+  await ensureUsers();
+  return (await db.get('users')) || { users: [] };
+}
 
-async function sendCode(code) {
-  if (
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS &&
-    user.email
-  ) {
+function canUse(user, counter) {
+  return user.counters === 'all' ||
+    (Array.isArray(user.counters) &&
+      user.counters.includes(counter));
+}
+
+/* ---------- AUTHENTICATION ---------- */
+
+const auth = h(async (req, res, next) => {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7).trim()
+    : '';
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'Please login again'
+    });
+  }
+
+  const sessionKey = 'sess:' + sha(token);
+  const session = await db.get(sessionKey);
+
+  if (!session) {
+    return res.status(401).json({
+      error: 'Please login again'
+    });
+  }
+
+  // Invalidate sessions after the user's password is reset.
+  const version = (await db.get('ver:' + session.username)) || 0;
+
+  if (String(version) !== String(session.ver || 0)) {
+    await db.del(sessionKey);
+
+    return res.status(401).json({
+      error: 'Please login again'
+    });
+  }
+
+  req.session = session;
+  req.sessKey = sessionKey;
+
+  next();
+});
+
+/* ---------- PASSWORD RESET EMAIL ---------- */
+
+async function sendCode(user, code) {
+  if (process.env.SMTP_HOST && user.email) {
     try {
       const nodemailer = require('nodemailer');
-      const port = Number(process.env.SMTP_PORT || 587);
 
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port,
-        secure: port === 465,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Number(process.env.SMTP_PORT || 587) === 465,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
@@ -167,271 +259,238 @@ async function sendCode(code) {
         text: `Your password reset code is ${code}. It is valid for 10 minutes.`
       });
 
-      console.log('Password reset email sent.');
       return;
     } catch (error) {
-      console.error('Password reset email failed:', error.message);
+      console.error('Email failed:', error.message);
     }
   }
 
-  // Development fallback only. Configure SMTP for production.
-  console.log('PASSWORD RESET CODE:', code, '(valid for 10 minutes)');
+  // For local testing, check the server terminal.
+  console.log(
+    `PASSWORD RESET CODE for ${user.username}: ${code} (valid for 10 minutes)`
+  );
 }
 
-// ==================================================
-// LOGIN
-// ==================================================
+/* ---------- COUNTERS ---------- */
 
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body || {};
-
-  if (
-    typeof username === 'string' &&
-    typeof password === 'string' &&
-    username === user.username &&
-    verify(password, user.password)
-  ) {
-    const token = crypto.randomBytes(32).toString('hex');
-    tokens.add(token);
-    return res.json({ token });
-  }
-
-  return res.status(401).json({
-    error: 'Invalid username or password'
-  });
+app.get('/api/counters', (req, res) => {
+  res.json({ counters: COUNTERS });
 });
 
-// ==================================================
-// FORGOT PASSWORD
-// ==================================================
+/* ---------- LOGIN ---------- */
 
-app.post('/api/forgot', async (req, res) => {
-  const { username } = req.body || {};
+app.post('/api/login', h(async (req, res) => {
+  const { username, password, counter, remember } = req.body || {};
 
-  if (typeof username === 'string' && username === user.username) {
+  const data = await getUsers();
+
+  const user = data.users.find(
+    item => norm(item.username) === norm(username)
+  );
+
+  if (!user || !password || !verify(password, user.password)) {
+    return res.status(401).json({
+      error: 'Invalid username or password'
+    });
+  }
+
+  if (!COUNTERS.includes(counter)) {
+    return res.status(400).json({
+      error: 'Please select a counter'
+    });
+  }
+
+  if (!canUse(user, counter)) {
+    return res.status(403).json({
+      error: `This login does not have access to ${counter}`
+    });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const version = (await db.get('ver:' + user.username)) || 0;
+
+  const session = {
+    username: user.username,
+    name: user.name || user.username,
+    counter,
+    ver: version
+  };
+
+  // Remembered sessions last 90 days; others last 12 hours.
+  const sessionSeconds = remember ? 90 * 86400 : 12 * 3600;
+
+  await db.set(
+    'sess:' + sha(token),
+    session,
+    sessionSeconds
+  );
+
+  res.json({
+    token,
+    name: session.name,
+    counter
+  });
+}));
+
+/* ---------- LOGOUT ---------- */
+
+app.post('/api/logout', auth, h(async (req, res) => {
+  await db.del(req.sessKey);
+  res.json({ ok: true });
+}));
+
+/* ---------- FORGOT PASSWORD ---------- */
+
+app.post('/api/forgot', h(async (req, res) => {
+  const username = (req.body || {}).username;
+  const data = await getUsers();
+
+  const user = data.users.find(
+    item => norm(item.username) === norm(username)
+  );
+
+  if (user) {
     const code = String(crypto.randomInt(100000, 1000000));
 
-    resetState = {
-      code,
-      expires: Date.now() + 10 * 60 * 1000,
-      attempts: 0
-    };
+    await db.set(
+      'reset:' + user.username,
+      {
+        code,
+        attempts: 0,
+        expires: Date.now() + 10 * 60 * 1000
+      },
+      600
+    );
 
-    await sendCode(code);
+    await sendCode(user, code);
   }
 
-  return res.json({
-    message: 'If the username is correct, a reset code has been sent. It is valid for 10 minutes.'
+  res.json({
+    message: 'If the username is correct, a 6-digit reset code has been sent. It is valid for 10 minutes.'
   });
-});
+}));
 
-// ==================================================
-// RESET PASSWORD
-// ==================================================
+/* ---------- RESET PASSWORD ---------- */
 
-app.post('/api/reset', (req, res) => {
+app.post('/api/reset', h(async (req, res) => {
   const { username, code, newPassword } = req.body || {};
 
-  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+  if (!newPassword || String(newPassword).length < 6) {
     return res.status(400).json({
       error: 'New password must be at least 6 characters'
     });
   }
 
-  if (
-    !resetState ||
-    username !== user.username ||
-    Date.now() > resetState.expires
-  ) {
-    resetState = null;
+  const data = await getUsers();
+
+  const user = data.users.find(
+    item => norm(item.username) === norm(username)
+  );
+
+  const key = user ? 'reset:' + user.username : '';
+  const reset = user ? await db.get(key) : null;
+
+  if (!user || !reset || Date.now() > reset.expires) {
     return res.status(400).json({
       error: 'Invalid or expired code. Please request a new one.'
     });
   }
 
-  resetState.attempts += 1;
+  reset.attempts++;
 
-  if (resetState.attempts > 5) {
-    resetState = null;
+  if (reset.attempts > 5) {
+    await db.del(key);
+
     return res.status(429).json({
-      error: 'Too many wrong attempts. Please request a new code.'
+      error: 'Too many incorrect attempts. Request a new code.'
     });
   }
 
-  if (typeof code !== 'string' || code.trim() !== resetState.code) {
-    return res.status(400).json({ error: 'Wrong reset code' });
-  }
+  if (String(code || '').trim() !== reset.code) {
+    await db.set(key, reset, 600);
 
-  try {
-    user.password = hash(newPassword);
-    saveUser();
-
-    resetState = null;
-    tokens.clear();
-
-    return res.json({
-      message: 'Password updated. Please log in with your new password.'
-    });
-  } catch (error) {
-    console.error('Password save failed:', error.message);
-    return res.status(500).json({
-      error: 'Could not save the new password.'
+    return res.status(400).json({
+      error: 'Wrong reset code'
     });
   }
-});
 
-// ==================================================
-// BACKGROUND FOOD IMAGES
-// ==================================================
+  user.password = hash(String(newPassword));
+
+  await db.set('users', data);
+  await db.del(key);
+
+  // Log out all previous sessions for this user.
+  await db.set('ver:' + user.username, Date.now());
+
+  res.json({
+    message: 'Password updated. Please login with your new password.'
+  });
+}));
+
+/* ---------- BACKGROUND IMAGES ---------- */
 
 app.get('/api/bg-images', (req, res) => {
-  try {
-    const files = fs.readdirSync(IMG_DIR)
-      .filter(file => /\.(jpe?g|png|webp)$/i.test(file));
+  let files = [];
 
-    return res.json({
-      images: files.map(file => '/images/' + encodeURIComponent(file))
-    });
-  } catch (_) {
-    return res.json({ images: [] });
+  try {
+    files = require('fs').readdirSync(IMG_DIR).filter(
+      file => /\.(jpe?g|png|webp)$/i.test(file)
+    );
+  } catch {
+    // Images folder may not exist yet.
   }
+
+  res.json({
+    images: files.map(
+      file => '/images/' + encodeURIComponent(file)
+    )
+  });
 });
 
-// ==================================================
-// OPENAI REQUEST HELPER
-// ==================================================
+/* ---------- GET SAVED MENU ---------- */
 
-function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+app.get('/api/menu', auth, h(async (req, res) => {
+  const menu = await db.get('menu:' + req.session.counter);
 
-async function requestOpenAI(endpoint, options) {
-  const maxAttempts = 2;
+  res.json(menu || { items: [] });
+}));
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    let response;
+/* ---------- OPENAI NUTRITION ANALYSIS ---------- */
 
-    try {
-      response = await fetch(endpoint, {
-        ...options,
-        signal: AbortSignal.timeout(60000)
-      });
-    } catch (error) {
-      console.error(
-        `OpenAI network attempt ${attempt}/${maxAttempts} failed:`,
-        error.message
-      );
-
-      if (attempt < maxAttempts) {
-        await wait(1500);
-        continue;
-      }
-
-      throw error;
-    }
-
-    // Do not retry quota, authentication, or invalid-model errors.
-    if (
-      response.ok ||
-      ![500, 502, 503, 504].includes(response.status) ||
-      attempt === maxAttempts
-    ) {
-      return response;
-    }
-
-    console.warn(
-      `OpenAI returned HTTP ${response.status}; retrying once after 2 seconds.`
-    );
-
-    await wait(2000);
-  }
-
-  throw new Error('OpenAI request failed.');
-}
-
-function extractOpenAIText(data) {
-  if (typeof data.output_text === 'string' && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
-
-  const parts = [];
-
-  for (const item of data.output || []) {
-    if (item.type !== 'message') continue;
-
-    for (const content of item.content || []) {
-      if (
-        content.type === 'output_text' &&
-        typeof content.text === 'string'
-      ) {
-        parts.push(content.text);
-      }
-    }
-  }
-
-  return parts.join('\n').trim();
-}
-
-// ==================================================
-// OPENAI NUTRITION ANALYSIS
-// ==================================================
-
-app.post('/api/analyze', async (req, res) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token || !tokens.has(token)) {
-    return res.status(401).json({ error: 'Please login again' });
-  }
-
-  const inputDishes = Array.isArray(req.body?.dishes)
+app.post('/api/analyze', auth, h(async (req, res) => {
+  const dishes = Array.isArray(req.body?.dishes)
     ? req.body.dishes
+        .map(dish => String(dish).trim().slice(0, 60))
+        .filter(Boolean)
+        .slice(0, 8)
     : [];
 
-  const dishes = inputDishes
-    .filter(dish => typeof dish === 'string')
-    .map(dish => dish.trim().slice(0, 60))
-    .filter(Boolean)
-    .slice(0, 12);
-
-  if (dishes.length === 0) {
+  if (!dishes.length) {
     return res.status(400).json({
-      error: 'Please provide at least one dish.'
+      error: 'No dishes provided'
     });
-  }
-
-  // Avoid paying for the same successful analysis repeatedly.
-  const cachedItems = getCachedAnalysis(dishes);
-
-  if (cachedItems) {
-    console.log('Nutrition cache hit:', dishes.join(', '));
-    return res.json({ items: cachedItems, cached: true });
   }
 
   if (!API_KEY) {
-    console.error('OPENAI_API_KEY is missing from .env');
-
     return res.status(500).json({
-      error: 'OPENAI_API_KEY is missing from the server environment.'
+      error: 'OPENAI_API_KEY is not configured in the environment.'
     });
   }
 
   const prompt = `
-You are a nutrition assistant for a cafeteria smart food menu.
+You are a nutrition assistant for a cafeteria Smart Food Menu display.
 
-Analyze these dishes:
-${JSON.stringify(dishes)}
+Estimate nutrition values for one typical serving of each dish.
+Dishes: ${JSON.stringify(dishes)}
 
-Estimate nutrition for one typical serving of each dish.
+Return a JSON object containing an "items" array.
+Include one object per dish, in the same order.
 
-Return ONLY a valid JSON array with exactly one object per dish,
-in the same order as the input.
-
-Each object must contain:
+Each item must contain:
 {
-  "name": "dish name",
-  "type": "veg",
-  "serving_size": "200 g",
+  "name": "Properly capitalized dish name",
+  "type": "veg, non-veg, or vegan",
+  "serving_size": "e.g. 200 g",
   "calories": 250,
   "protein_g": 10,
   "carbs_g": 30,
@@ -439,164 +498,141 @@ Each object must contain:
   "fibre_g": 4,
   "vitamins": ["A", "B1", "C"],
   "minerals": ["Iron", "Calcium", "Potassium"],
-  "allergens": ["Unknown - recipe dependent"]
+  "allergens": ["Milk (Dairy)"]
 }
 
 Rules:
-- type must be exactly "veg", "non-veg", or "vegan".
-- Vegan means no meat, fish, dairy, eggs, or honey.
-- Vegetarian food may contain dairy or eggs.
-- Nutrition values must be numbers.
-- serving_size must be a short string.
-- Include no more than 6 vitamins and 5 minerals.
-- Mention common allergens when known.
-- If ingredients are uncertain, use ["Unknown - recipe dependent"].
-- Values are estimates and vary with recipe and portion size.
-- Do not claim food treats or prevents diseases.
-- Return JSON only, without Markdown fences or extra text.
+- Nutrition figures are estimates for a typical serving.
+- Use numeric values for calories, protein_g, carbs_g, fat_g, and fibre_g.
+- Use vegan only if the dish normally contains no dairy, egg, honey, or meat.
+- Use veg for vegetarian dishes, including those with dairy or eggs.
+- Use non-veg for dishes containing meat or seafood.
+- Include at most 6 vitamins and 5 minerals.
+- If there is no common allergen to report, use ["None known"].
+- Mention when allergens depend on the recipe.
+- Return valid JSON only.
 `;
 
   try {
-    console.log(
-      `Analysing ${dishes.length} dish(es) using OpenAI model ${MODEL}.`
-    );
-
-    const response = await requestOpenAI(
+    const response = await fetch(
       'https://api.openai.com/v1/responses',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`
+          'Authorization': `Bearer ${API_KEY}`
         },
         body: JSON.stringify({
           model: MODEL,
-          instructions: 'Return only a valid JSON array. Do not include Markdown fences.',
+          instructions:
+            'Follow the nutrition instructions and return a valid JSON object with an items array.',
           input: prompt,
-          max_output_tokens: 2500,
+          max_output_tokens: 3000,
+          text: {
+            format: {
+              type: 'json_object'
+            }
+          },
           store: false
-        })
+        }),
+        signal: AbortSignal.timeout(60000)
       }
     );
 
-    const responseText = await response.text();
-
-    let data;
-
-    try {
-      data = responseText ? JSON.parse(responseText) : {};
-    } catch (_) {
-      console.error('OpenAI returned an unreadable response.');
-
-      return res.status(502).json({
-        error: 'OpenAI returned an unreadable response. Please try again.'
-      });
-    }
+    const data = await response.json();
 
     if (!response.ok) {
-      const apiMessage =
-        data?.error?.message ||
-        `OpenAI API returned HTTP ${response.status}`;
-
-      console.error('OpenAI API error:', response.status, apiMessage);
-
-      if (response.status === 429) {
-        return res.status(429).json({
-          error: 'OpenAI API quota or rate limit reached. Check your API billing and usage limits.'
-        });
-      }
-
-      if (response.status === 401 || response.status === 403) {
-        return res.status(502).json({
-          error: 'OpenAI rejected the API key or access. Check OPENAI_API_KEY and project permissions.'
-        });
-      }
-
-      if (response.status === 404) {
-        return res.status(502).json({
-          error: `OpenAI model "${MODEL}" was not found or is unavailable. Check OPENAI_MODEL.`
-        });
-      }
-
-      if ([500, 502, 503, 504].includes(response.status)) {
-        return res.status(503).json({
-          error: 'OpenAI is temporarily unavailable. Please try again later.'
-        });
-      }
-
-      return res.status(502).json({ error: apiMessage });
-    }
-
-    const generatedText = extractOpenAIText(data);
-
-    if (!generatedText) {
-      console.error('OpenAI returned no text.');
+      console.error('OpenAI API error:', data);
 
       return res.status(502).json({
-        error: 'OpenAI returned an empty response. Please try again.'
+        error: data.error?.message || 'OpenAI API request failed'
       });
     }
 
-    const cleanedText = generatedText
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/, '')
+    const outputText = (data.output || [])
+      .filter(item => item.type === 'message')
+      .flatMap(item => item.content || [])
+      .filter(item => item.type === 'output_text')
+      .map(item => item.text || '')
+      .join('')
       .trim();
 
-    let items;
+    if (!outputText) {
+      console.error('OpenAI returned no text:', JSON.stringify(data));
+
+      return res.status(502).json({
+        error: 'The AI returned an empty response. Please try again.'
+      });
+    }
+
+    let result;
 
     try {
-      items = JSON.parse(cleanedText);
-    } catch (_) {
-      console.error('OpenAI returned invalid JSON:', cleanedText.slice(0, 300));
-
+      result = JSON.parse(outputText);
+    } catch {
       return res.status(502).json({
-        error: 'OpenAI returned an invalid response. Please try again.'
+        error: 'The AI returned unreadable JSON. Please try again.'
       });
     }
 
-    if (!Array.isArray(items)) {
+    if (!result || !Array.isArray(result.items)) {
       return res.status(502).json({
-        error: 'OpenAI returned an unexpected response format.'
+        error: 'The AI response is missing the items array.'
       });
     }
 
-    saveCachedAnalysis(dishes, items);
+    const items = result.items;
 
-    return res.json({ items, cached: false });
+    // Save this menu separately for the logged-in counter.
+    await db.set('menu:' + req.session.counter, {
+      items,
+      updatedAt: new Date().toISOString(),
+      by: req.session.name
+    });
+
+    res.json({ items });
+
   } catch (error) {
-    console.error('OpenAI connection error:', error.message);
+    console.error('Nutrition analysis error:', error);
 
-    const isTimeout = error && (
+    if (
       error.name === 'TimeoutError' ||
-      error.name === 'AbortError' ||
-      /timed out|timeout/i.test(error.message || '')
-    );
+      error.name === 'AbortError'
+    ) {
+      return res.status(504).json({
+        error: 'The AI request timed out. Please try again.'
+      });
+    }
 
-    return res.status(502).json({
-      error: isTimeout
-        ? 'OpenAI took too long to respond. Check your internet connection and try again.'
-        : 'Could not connect to OpenAI. Check the VS Code terminal for details.'
+    res.status(500).json({
+      error: 'Could not get AI response: ' + error.message
     });
   }
-});
+}));
 
-// ==================================================
-// HEALTH CHECK
-// ==================================================
+/* ---------- HEALTH CHECK ---------- */
 
 app.get('/api/health', (req, res) => {
-  return res.json({ status: 'ok' });
+  res.json({
+    ok: true,
+    message: 'Cafeteria Display server is running',
+    model: MODEL,
+    counters: COUNTERS
+  });
 });
 
-// ==================================================
-// START SERVER
-// ==================================================
+/* ---------- VERCEL AND LOCAL START ---------- */
 
-app.listen(PORT, () => {
-  console.log(`Cafeteria application running on port ${PORT}`);
-  console.log(`OpenAI model configured: ${MODEL}`);
+// Vercel imports this app.
+module.exports = app;
 
-  if (!API_KEY) {
-    console.warn('WARNING: OPENAI_API_KEY is missing from .env');
-  }
-});
+// Local testing: npm start
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+
+  app.listen(PORT, () => {
+    console.log(`Running on http://localhost:${PORT}`);
+    console.log('Model:', MODEL);
+    console.log('Counters:', COUNTERS.join(', '));
+  });
+}

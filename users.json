@@ -1,5 +1,74 @@
 {
-  "username": "admin",
-  "password": "b1ebbd8eda73b89b1999bba4a87f77c1:cddc0ab197d9822eae853873e1386a2155caa642a743b0a67426a156b31be8a1",
-  "email": ""
+  "users": [
+    {
+      "username": "admin",
+      "password": "b1ebbd8eda73b89b1999bba4a87f77c1:cddc0ab197d9822eae853873e1386a2155caa642a743b0a67426a156b31be8a1",
+      "name": "Admin",
+      "email": "",
+      "counters": "all"
+    },
+    {
+      "username": "twogood",
+      "password": "1b094dfb816db1845aa40de215efc080:7bc75297c86d5057e4ef397f86223207cf900c60b24129b51b9aeb1948da73ce",
+      "name": "Two Good",
+      "email": "",
+      "counters": [
+        "Two Good"
+      ]
+    },
+    {
+      "username": "uttardakshin",
+      "password": "12a30ee6aa4c79b21b3a392410732c0c:0872dea99867ce08002d5bbadfd9416476d61b780d8b7a97be58b3b659d6d925",
+      "name": "Uttardakshin",
+      "email": "",
+      "counters": [
+        "Uttardakshin"
+      ]
+    },
+    {
+      "username": "tandoor",
+      "password": "42e2dc543df325212b58f578e8f552ca:369f568640930e9b3171e8f4f006cde6e18d6aa7d8fd94379d933c929c2eb335",
+      "name": "Tandoor",
+      "email": "",
+      "counters": [
+        "Tandoor"
+      ]
+    },
+    {
+      "username": "woker",
+      "password": "9a8e8db03c95e08b776896876cc92931:256ac71c9764e5bf2ab8050aadd058bfd7140323c4269e14695840a257d50111",
+      "name": "Woker",
+      "email": "",
+      "counters": [
+        "Woker"
+      ]
+    },
+    {
+      "username": "combo",
+      "password": "a02f6607f7a16acfa9f0365cc095583d:7748c811428a0680045794324a1188569c9c642ad461416d846a520aeb3491e8",
+      "name": "Combo",
+      "email": "",
+      "counters": [
+        "Combo"
+      ]
+    },
+    {
+      "username": "chefslibrary",
+      "password": "4dce6690abbb04e3664e972111fa6445:33a00287d55be21084da485e2db89654f83eb2a27e5d44392791b8b38a404dbc",
+      "name": "Chef's Library",
+      "email": "",
+      "counters": [
+        "Chef's Library"
+      ]
+    },
+    {
+      "username": "tripet",
+      "password": "a4d850b2bbb12942d6280c8e95c3cfdd:1358d2b12a80997e4ed7905557df9969297f6587866f8e7f04ad3b2fd2b7fdfd",
+      "name": "Tripet",
+      "email": "",
+      "counters": [
+        "Tripet"
+      ]
+    }
+  ]
 }

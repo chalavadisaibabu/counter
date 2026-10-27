@@ -1,4 +1,6 @@
-.env
-.env.*
-!.env.example
-node_modules/
+node_modules
+.env*
+.vercel
+users.json
+menus.json
+sessions.json
