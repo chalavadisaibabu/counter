@@ -4,4 +4,5 @@ node_modules
 users.json
 menus.json
 sessions.json
-.vercel/
+add-user.js
+make-list.js
