@@ -1,0 +1,13 @@
+
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cafeteria-display",
+  "main": "./worker.js",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  }
+}
