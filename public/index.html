@@ -90,6 +90,22 @@
   .who { color: #9a5b12; background: #fdebd3; }
   header .ghost { background: #e2e8f0; color: #1e293b; }
   header .ghost:hover { background: #cbd5e1; }
+  /* Logout button stays at the middle-right of Page 2 */
+  #input .logout-side {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    background: #e2e8f0;
+    color: #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  }
+  #input .logout-side:hover { background: #cbd5e1; }
+  @media (max-width: 600px) {
+    #input .logout-side { right: 8px; padding: 10px 12px; font-size: .9rem; }
+    #input #inputs { margin-right: 28px; }
+  }
   .plus { width: 52px; height: 52px; border-radius: 50%; font-size: 2rem; padding: 0;
           background: #22c55e; color: #052e16; line-height: 1; }
   .plus:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
@@ -244,10 +260,10 @@
   <header>
     <h2>Enter Food Items <span class="count" id="count">0 / 8</span> <span class="count who" id="who"></span></h2>
     <div>
-      <button class="ghost" onclick="logout()">Logout</button>
       <button class="plus" id="plusBtn" title="Add dish (max 8)" onclick="addRow()">+</button>
     </div>
   </header>
+  <button class="ghost logout-side" onclick="logout()">Logout</button>
   <div id="inputs">
     <p class="hint" id="hint">Click the + button (top right) to add a dish (maximum 8)</p>
   </div>
