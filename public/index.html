@@ -454,29 +454,46 @@ function estimateDish(name) {
  return {available:true,name:name.replace(/\b\w/g,c=>c.toUpperCase()),type,serving_size,calories,protein_g,carbs_g,fat_g,fibre_g,vitamins:micros.vitamins,minerals:micros.minerals,allergens:getAllergens(name)};
 }
 
-// Estimated common allergens based on the dish name. Recipes vary; verify ingredients with the kitchen.
+// Dish-specific possible allergen guide. This is an estimate from the dish name only.
+// Always verify the actual recipe, packaged ingredients, and kitchen cross-contact.
 function getAllergens(name) {
- const n = String(name || '').toLowerCase();
+ const n = String(name || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
  const found = [];
  const add = (label, pattern) => { if (pattern.test(n)) found.push(label); };
- add('Milk/Dairy (if made with milk, butter, ghee, paneer, or curd)', /paneer|butter|cream|cheese|milk|curd|yogurt|lassi|ghee|makhani|korma|malai|raita/);
- add('Wheat/Gluten (if made with wheat flour)', /wheat|atta|maida|roti|chapati|paratha|naan|puri|poori|bread|pasta|noodle|samosa|kulcha|bhatura/);
- add('Egg', /egg|omelette|omelet|mayonnaise/);
- add('Peanuts', /peanut|groundnut/);
- add('Tree nuts (such as cashew or almond; recipe-dependent)', /cashew|kaju|almond|badam|pista|pistachio|walnut|nut/);
- add('Soy (if soy/tofu/soy sauce is used)', /soy|tofu|soya/);
- add('Sesame (if sesame/til is used)', /sesame|til/);
- add('Mustard (if mustard or mustard oil is used)', /mustard|rai/);
- add('Fish', /fish/);
+
+ // Common dishes whose usual ingredients may indicate likely allergens.
+ if (/idli|plain dosa|set dosa|rava dosa|uttapam|upma|poha/.test(n)) {
+   if (/rava|semolina|sooji|upma/.test(n)) add('Wheat/Gluten (rava/semolina may contain wheat)', /rava|semolina|sooji|upma/);
+   if (/dosa|idli|uttapam/.test(n)) found.push('Chutney accompaniment may contain peanuts, sesame, or coconut');
+ }
+ if (/masala dosa|mysore dosa/.test(n)) found.push('Chutney may contain peanuts; filling may contain dairy if butter/ghee is used');
+ if (/pani puri|gol gappa|chaat|bhel puri|sev puri/.test(n)) found.push('Possible gluten in puri/sev; chutneys may contain peanuts or sesame');
+ if (/samosa|pakora|pakoda|bhaji|pav bhaji|vada pav|kachori|puri|poori|naan|roti|chapati|paratha|kulcha|bhatura|bread|pasta|noodle|wheat|maida|atta/.test(n)) {
+   add('Wheat/Gluten', /samosa|pakora|pakoda|bhaji|pav bhaji|vada pav|kachori|puri|poori|naan|roti|chapati|paratha|kulcha|bhatura|bread|pasta|noodle|wheat|maida|atta/);
+ }
+ add('Milk/Dairy', /paneer|butter|cream|cheese|milk|curd|yogurt|lassi|ghee|makhani|korma|malai|raita|dahi|milkshake|ice cream|kulfi|khoya|kheer|pav bhaji/);
+ add('Egg', /egg|omelette|omelet|mayonnaise|mayo|cake|brownie/);
+ add('Peanuts', /peanut|groundnut|moongphali/);
+ add('Tree nuts (cashew/almond/pistachio)', /cashew|kaju|almond|badam|pista|pistachio|walnut|hazelnut|mixed nuts|dry fruit/);
+ add('Soy', /soy|tofu|soya|soy sauce/);
+ add('Sesame', /sesame|til|tahini/);
+ add('Mustard', /mustard|rai/);
+ add('Fish', /fish|fish curry/);
  add('Crustaceans/shellfish', /prawn|shrimp|crab|lobster|shellfish/);
- if (!found.length) found.push('Recipe-dependent: check wheat/gluten, milk, nuts, peanuts, soy, sesame and other ingredients');
- return found;
+ add('Molluscs', /squid|clam|oyster|mussel/);
+
+ if (/biryani|pulao|fried rice|jeera rice/.test(n)) found.push('Recipe-dependent: may contain dairy (ghee), soy (sauce), or nuts (garnish)');
+ if (/chicken|mutton|keema|kebab|tikka|curry|gravy/.test(n)) found.push('Recipe-dependent: marinade/gravy may contain dairy, nuts, mustard, or soy');
+ if (/salad|sprout|fruit salad/.test(n)) found.push('Check dressing, toppings, and cross-contact for added allergens');
+
+ const unique = [...new Set(found)];
+ if (!unique.length) unique.push('No major allergen identified from the dish name alone; check the full recipe and cross-contact');
+ return unique;
 }
 
 function allergenText(value, name) {
- // Replace old generic placeholders with estimates inferred from the dish name.
- if (!Array.isArray(value) || !value.length || value.some(v => /check ingredients|varies by recipe/i.test(String(v)))) return getAllergens(name);
- return value;
+ // Always recalculate by dish name so old saved generic allergen lists are not repeated.
+ return getAllergens(name);
 }
 
 // Approximate common micronutrients for typical servings. Recipes and amounts vary.
