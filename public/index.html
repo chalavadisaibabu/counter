@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Food Menu</title>
+<title>Cafeteria Smart Food Menu - Single File</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,6 +190,7 @@
       <p class="sub" id="headSub"></p>
 
       <div class="form">
+        <p style="font-size:.78rem;color:#8a4a0e;margin-bottom:12px">Browser-only version. Demo counter password: <b>Bms@2026</b>. Data stays in this browser.</p>
         <!-- Login panel -->
         <div id="pLogin">
           <div class="field" data-ic="store"><select id="counter"></select></div>
@@ -283,71 +284,69 @@
 </div>
 
 <script>
+/*
+  SINGLE-FILE, BROWSER-ONLY EDITION
+  Data is saved in this browser's localStorage. It is not shared between devices.
+  Login/reset are convenience controls only, NOT secure authentication.
+  Nutrition values below are rough examples, NOT AI-generated or medical advice.
+*/
 const MAX_DISHES = 8;
 const $ = id => document.getElementById(id);
 const pages = ['login', 'input', 'loading', 'display'];
 let currentPage = 'login';
 let currentItems = [];
 let counterNames = [];
-// "Two Good" / "twogood" / "TWO GOOD" all become "twogood"
+const DEFAULT_COUNTERS = ["Two Good","Uttardakshin","Tandoor","Woker","Combo","Chef's Library","Tripet"];
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-function show(p) {
-  currentPage = p;
-  pages.forEach(x => $(x).classList.toggle('hidden', x !== p));
-  if (p === 'login') { loadPlates(); prefillUser(); }
-}
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
-
-// session values live in localStorage (Remember me) or sessionStorage (this session only)
+const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+const dataGet = (key, fallback) => {
+  try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+  catch { return fallback; }
+};
+const dataSet = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 function sget(k) { return localStorage.getItem(k) || sessionStorage.getItem(k); }
-function token() { return sget('token'); }
-function authH() { return { Authorization: 'Bearer ' + token() }; }
+function token() { return sget('local_login') === 'yes' ? 'local-session' : ''; }
+function authH() { return {}; }
 
 const LEAF = '<svg class="leaf" viewBox="0 0 24 24"><path d="M20 3C9 3 4 9 4 15c0 1.5.4 2.8 1 3.9C7 14 11 11 15 10c-3 2-5.5 5-7 9 1 .6 2.2 1 3.5 1 7 0 9-7 9-17z"/></svg>';
 const LEAFV = LEAF.replace('class="leaf"', 'class="leaf vegan"');
 const WARN = '<svg class="warn" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>';
-document.querySelector('.legend').innerHTML = document.querySelector('.legend').innerHTML
-  .replace('__LEAF__', LEAF).replace('__LEAFV__', LEAFV);
+document.querySelector('.legend').innerHTML = document.querySelector('.legend').innerHTML.replace('__LEAF__', LEAF).replace('__LEAFV__', LEAFV);
 
-// ---------- Field icons + show/hide password ----------
 const S = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
-  user:  `<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>`,
-  lock:  `<svg ${S}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`,
-  store: `<svg ${S}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
-  eye:   `<svg ${S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`
+  user:`<svg ${S}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>`,
+  lock:`<svg ${S}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`,
+  store:`<svg ${S}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+  eye:`<svg ${S}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`
 };
 document.querySelectorAll('.field').forEach(f => {
-  const input = f.querySelector('input');
-  f.insertAdjacentHTML('afterbegin', `<span class="ic">${ICONS[f.dataset.ic]}</span>`);
-  if (f.dataset.eye !== undefined) {
+  const input = f.querySelector('input,select');
+  if (f.dataset.ic && ICONS[f.dataset.ic]) f.insertAdjacentHTML('afterbegin', `<span class="ic">${ICONS[f.dataset.ic]}</span>`);
+  if (f.dataset.eye !== undefined && input) {
     f.insertAdjacentHTML('beforeend', `<button type="button" class="eye" tabindex="-1" title="Show / hide">${ICONS.eye}</button>`);
     f.querySelector('.eye').onclick = () => { input.type = input.type === 'password' ? 'text' : 'password'; };
   }
 });
 
-// ---------- Login page: food plates + counter dropdown ----------
 const EMOJIS = ['🥟','🥞','🍨','🍕','🍔','🍛','🥗','🍜','🍣','🥘','🌮','🍩','🍰','🍗','🍝','🧁'];
 const shuffle = a => [...a].sort(() => Math.random() - 0.5);
-async function loadPlates() {
-  let imgs = [];
-  try { imgs = (await (await fetch('/api/bg-images')).json()).images || []; } catch (e) {}
-  const s = shuffle(imgs), e = shuffle(EMOJIS);
-  ['p1', 'p2', 'p3'].forEach((id, i) => {
-    const el = $(id);
-    if (s.length) { el.style.backgroundImage = `url('${s[i % s.length]}')`; el.textContent = ''; }
-    else { el.style.backgroundImage = 'none'; el.textContent = e[i]; }
-  });
+function show(p) {
+  currentPage = p;
+  pages.forEach(x => $(x).classList.toggle('hidden', x !== p));
+  if (p === 'login') { loadPlates(); prefillUser(); }
 }
-async function loadCounters() {
-  try { counterNames = (await (await fetch('/api/counters')).json()).counters || []; } catch (e) { counterNames = []; }
-  $('counter').innerHTML = '<option value="" disabled selected>Select your counter</option>' +
-    counterNames.map(c => `<option>${esc(c)}</option>`).join('');
+function loadPlates() {
+  const e = shuffle(EMOJIS);
+  ['p1','p2','p3'].forEach((id,i) => { $(id).style.backgroundImage='none'; $(id).textContent=e[i]; });
+}
+function loadCounters() {
+  counterNames = dataGet('cafeteria_counters', DEFAULT_COUNTERS);
+  if (!Array.isArray(counterNames) || !counterNames.length) counterNames = DEFAULT_COUNTERS;
+  $('counter').innerHTML = '<option value="" disabled selected>Select your counter</option>' + counterNames.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   const last = localStorage.getItem('last_counter');
   if (counterNames.includes(last)) $('counter').value = last;
 }
-// choosing a counter fills in that counter's username (you only type the password)
 $('counter').addEventListener('change', () => {
   const u = $('user').value.trim();
   if (!u || counterNames.some(c => norm(c) === norm(u))) $('user').value = norm($('counter').value);
@@ -358,244 +357,146 @@ function prefillUser() {
   if (u) { $('user').value = u; $('remember').checked = true; }
   else if ($('counter').value && !$('user').value) $('user').value = norm($('counter').value);
 }
-
-// ---------- Login / Forgot / Reset ----------
 const HEAD = {
-  pLogin:  ['Craving Something?', 'Pick your counter and log in to update the menu'],
-  pForgot: ['Forgot Password?', 'We will send a 6-digit code to reset your password'],
-  pReset:  ['Reset Password', 'Enter the code and choose a new password']
+ pLogin:['Craving Something?','Pick your counter and log in to update the menu'],
+ pForgot:['Forgot Password?','Browser-only demo reset — not secure for production'],
+ pReset:['Reset Password','Enter the code shown on screen and choose a new password']
 };
-function setMsg(text, isErr) {
-  $('loginErr').textContent = isErr ? text : '';
-  $('loginOk').textContent = isErr ? '' : text;
-}
+function setMsg(text,isErr) { $('loginErr').textContent=isErr?text:''; $('loginOk').textContent=isErr?'':text; }
 function showPanel(id) {
-  ['pLogin', 'pForgot', 'pReset'].forEach(p => $(p).classList.toggle('hidden', p !== id));
-  $('headTitle').textContent = HEAD[id][0];
-  $('headSub').textContent = HEAD[id][1];
-  setMsg('', true);
+ ['pLogin','pForgot','pReset'].forEach(p=>$(p).classList.toggle('hidden',p!==id));
+ $('headTitle').textContent=HEAD[id][0]; $('headSub').textContent=HEAD[id][1]; setMsg('',true);
 }
 showPanel('pLogin');
-
-async function post(url, body) {
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  return { ok: r.ok, data: await r.json() };
+function login() {
+ setMsg('',true);
+ const counter=$('counter').value, username=$('user').value.trim(), password=$('pass').value;
+ if (!counter) return setMsg('Please select your counter',true);
+ if (!username || !password) return setMsg('Enter username and password',true);
+ // Demo-only local login. All counter accounts use the demo password shown below.
+ const savedPasswords=dataGet('cafeteria_passwords',{});
+ const expected=savedPasswords[norm(username)] || 'Bms@2026';
+ const isCounter=counterNames.some(c=>norm(c)===norm(username)) && norm(counter)===norm(username);
+ const isAdmin=norm(username)==='admin' && password===localStorage.getItem('cafeteria_admin_password');
+ if ((!isCounter && !isAdmin) || password!==expected) return setMsg('Invalid username or password. Demo counter password: Bms@2026',true);
+ const store=$('remember').checked?localStorage:sessionStorage;
+ store.setItem('local_login','yes'); store.setItem('counter',counter); store.setItem('uname',username);
+ localStorage.setItem('last_counter',counter);
+ if ($('remember').checked) localStorage.setItem('remember_user',username); else localStorage.removeItem('remember_user');
+ $('pass').value=''; clearInputs(); setWho(); loadMenuAndShow();
 }
-async function login() {
-  setMsg('', true);
-  const counter = $('counter').value, username = $('user').value.trim();
-  if (!counter) return setMsg('Please select your counter', true);
-  if (!username || !$('pass').value) return setMsg('Enter username and password', true);
-
-  const remember = $('remember').checked;
-  const { ok, data } = await post('/api/login', { username, password: $('pass').value, counter, remember });
-  if (!ok) return setMsg(data.error, true);
-
-  const store = remember ? localStorage : sessionStorage;
-  const other = remember ? sessionStorage : localStorage;
-  store.setItem('token', data.token); store.setItem('counter', data.counter); store.setItem('uname', data.name);
-  ['token', 'counter', 'uname'].forEach(k => other.removeItem(k));
-  localStorage.setItem('last_counter', counter);
-  if (remember) localStorage.setItem('remember_user', username); else localStorage.removeItem('remember_user');
-
-  $('pass').value = '';
-  clearInputs();
-  setWho();
-  await loadMenuAndShow();
+let resetCode='';
+function forgot() {
+ const username=$('fUser').value.trim();
+ if(!username) return setMsg('Please enter your username',true);
+ const known=counterNames.some(c=>norm(c)===norm(username)) || norm(username)==='admin';
+ if(!known) return setMsg('Username was not found in this browser.',true);
+ resetCode=String(Math.floor(100000+Math.random()*900000));
+ $('rUser').value=username; showPanel('pReset');
+ setMsg('Demo reset code: '+resetCode+' (shown only in this browser; not secure).',false);
 }
-async function forgot() {
-  const username = $('fUser').value.trim();
-  if (!username) return setMsg('Please enter your username', true);
-  const { data } = await post('/api/forgot', { username });
-  $('rUser').value = username;
-  showPanel('pReset');
-  setMsg(data.message, false);
+function resetPassword() {
+ const username=$('rUser').value.trim(), code=$('rCode').value.trim(), p1=$('rPass').value,p2=$('rPass2').value;
+ if(!username||!code) return setMsg('Enter username and reset code',true);
+ if(code!==resetCode) return setMsg('Wrong reset code. Use the code shown after clicking Send Reset Code.',true);
+ if(p1.length<6) return setMsg('Password must be at least 6 characters',true);
+ if(p1!==p2) return setMsg('Passwords do not match',true);
+ const pw=dataGet('cafeteria_passwords',{}); pw[norm(username)]=p1; dataSet('cafeteria_passwords',pw);
+ ['rCode','rPass','rPass2'].forEach(i=>$(i).value=''); resetCode=''; showPanel('pLogin');
+ $('user').value=username; setMsg('Password changed in this browser only.',false);
 }
-async function resetPassword() {
-  const p1 = $('rPass').value, p2 = $('rPass2').value;
-  if (!$('rUser').value.trim() || !$('rCode').value.trim()) return setMsg('Enter username and reset code', true);
-  if (p1.length < 6) return setMsg('Password must be at least 6 characters', true);
-  if (p1 !== p2) return setMsg('Passwords do not match', true);
-  const { ok, data } = await post('/api/reset', { username: $('rUser').value.trim(), code: $('rCode').value.trim(), newPassword: p1 });
-  if (!ok) return setMsg(data.error, true);
-  ['rCode', 'rPass', 'rPass2'].forEach(i => $(i).value = '');
-  showPanel('pLogin');
-  setMsg(data.message, false);
-}
-$('pass').addEventListener('keydown', e => e.key === 'Enter' && login());
-$('user').addEventListener('keydown', e => e.key === 'Enter' && $('pass').focus());
-$('fUser').addEventListener('keydown', e => e.key === 'Enter' && forgot());
-$('rPass2').addEventListener('keydown', e => e.key === 'Enter' && resetPassword());
+$('pass').addEventListener('keydown',e=>e.key==='Enter'&&login());
+$('user').addEventListener('keydown',e=>e.key==='Enter'&&$('pass').focus());
+$('fUser').addEventListener('keydown',e=>e.key==='Enter'&&forgot());
+$('rPass2').addEventListener('keydown',e=>e.key==='Enter'&&resetPassword());
 
 function logout() {
-  if (token()) fetch('/api/logout', { method: 'POST', headers: authH() }).catch(() => {});
-  ['token', 'counter', 'uname'].forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
-  localStorage.removeItem('items');
-  currentItems = [];
-  clearInputs();
-  showPanel('pLogin'); show('login');
+ ['local_login','counter','uname'].forEach(k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);});
+ currentItems=[]; clearInputs(); showPanel('pLogin'); show('login');
 }
-
-// after login / on page load: show the saved menu of this counter, or the input page if there is none
-async function loadMenuAndShow() {
-  try {
-    const r = await fetch('/api/menu', { headers: authH() });
-    if (r.status === 401) { logout(); return; }
-    const d = await r.json();
-    if (d.items && d.items.length) { localStorage.setItem('items', JSON.stringify(d.items)); render(d.items); }
-    else show('input');
-  } catch (e) {                                        // server not reachable: use the last saved copy
-    const saved = localStorage.getItem('items');
-    if (saved) { try { render(JSON.parse(saved)); return; } catch (_) {} }
-    show('input');
-  }
+function menuKey() { return 'cafeteria_menu_'+norm(sget('counter')||''); }
+function loadMenuAndShow() {
+ const d=dataGet(menuKey(),{items:[]});
+ if(d.items && d.items.length) render(d.items); else show('input');
 }
-
-// ---------- Input page (max 8 dishes) ----------
-function setWho() { $('who').textContent = (sget('counter') || '') + (sget('uname') && sget('uname') !== sget('counter') ? ' · ' + sget('uname') : ''); }
+function setWho() { $('who').textContent=(sget('counter')||'')+(sget('uname')&&sget('uname')!==sget('counter')?' · '+sget('uname'):''); }
 function updateCount() {
-  const n = document.querySelectorAll('.dish').length;
-  $('count').textContent = `${n} / ${MAX_DISHES}`;
-  $('plusBtn').disabled = n >= MAX_DISHES;
+ const n=document.querySelectorAll('.dish').length;
+ $('count').textContent=`${n} / ${MAX_DISHES}`; $('plusBtn').disabled=n>=MAX_DISHES;
 }
 function clearInputs() {
-  $('inputs').innerHTML = '<p class="hint" id="hint">Click the + button (top right) to add a dish (maximum 8)</p>';
-  $('inputErr').textContent = '';
-  updateCount();
+ $('inputs').innerHTML='<p class="hint" id="hint">Click the + button (top right) to add a dish (maximum 8)</p>';
+ $('inputErr').textContent=''; updateCount();
 }
-function addRow(value = '') {
-  if (document.querySelectorAll('.dish').length >= MAX_DISHES) {
-    $('inputErr').textContent = `Maximum ${MAX_DISHES} dishes allowed`;
-    return;
-  }
-  $('inputErr').textContent = '';
-  $('hint')?.remove();
-  const row = document.createElement('div');
-  row.className = 'row';
-  row.innerHTML = `<input class="dish" placeholder="Enter dish name (e.g. Masala Dosa)" value="${esc(value)}">
-                   <button class="del" onclick="removeRow(this)">✕</button>`;
-  $('inputs').appendChild(row);
-  row.querySelector('input').focus();
-  updateCount();
+function addRow(value='') {
+ if(document.querySelectorAll('.dish').length>=MAX_DISHES) { $('inputErr').textContent=`Maximum ${MAX_DISHES} dishes allowed`; return; }
+ $('inputErr').textContent=''; $('hint')?.remove();
+ const row=document.createElement('div'); row.className='row';
+ const input=document.createElement('input'); input.className='dish'; input.placeholder='Enter dish name (e.g. Masala Dosa)'; input.value=value;
+ const del=document.createElement('button'); del.className='del'; del.textContent='✕'; del.onclick=()=>removeRow(del);
+ row.append(input,del); $('inputs').appendChild(row); input.focus(); updateCount();
 }
-function removeRow(btn) {
-  btn.parentElement.remove();
-  $('inputErr').textContent = '';
-  updateCount();
-}
+function removeRow(btn) { btn.parentElement.remove(); $('inputErr').textContent=''; updateCount(); }
 
-async function submitDishes() {
-  $('inputErr').textContent = '';
-  const dishes = [...document.querySelectorAll('.dish')].map(i => i.value.trim()).filter(Boolean).slice(0, MAX_DISHES);
-  if (!dishes.length) return $('inputErr').textContent = 'Please add at least one dish (use the + button)';
-
-  show('loading');
-  try {
-    const r = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authH() },
-      body: JSON.stringify({ dishes })
-    });
-    const d = await r.json();
-    if (r.status === 401) { logout(); return; }
-    if (!r.ok) throw new Error(d.error);
-    localStorage.setItem('items', JSON.stringify(d.items));
-    render(d.items);
-  } catch (e) {
-    show('input');
-    $('inputErr').textContent = e.message;
-  }
+function estimateDish(name) {
+ const n=name.toLowerCase();
+ if(!/[a-z]/i.test(name) || name.trim().length<2) return {name,available:false};
+ let type='veg', serving_size='200 g', calories=250, protein_g=8, carbs_g=35, fat_g=8, fibre_g=4;
+ if(/chicken|mutton|fish|prawn|egg|meat|keema|omelette|omelet/.test(n)) { type='non-veg'; calories=320; protein_g=24; carbs_g=18; fat_g=16; fibre_g=2; serving_size='200 g'; }
+ else if(/salad|sprout|fruit|vegan|tofu|vegetable/.test(n)) { type=/tofu|vegan|sprout|fruit|salad/.test(n)?'vegan':'veg'; calories=160; protein_g=6; carbs_g=24; fat_g=4; fibre_g=7; serving_size='200 g'; }
+ else if(/dosa|idli|upma|poha|rice|biryani|pulao|pav|noodle|pasta|bread|roti|chapati|paratha/.test(n)) { calories=290; protein_g=7; carbs_g=48; fat_g=8; fibre_g=3; }
+ else if(/paneer|butter|cream|cheese|korma|masala/.test(n)) { calories=340; protein_g=13; carbs_g=20; fat_g=22; fibre_g=3; }
+ else if(/soup/.test(n)) { calories=120; protein_g=4; carbs_g=18; fat_g=3; fibre_g=3; serving_size='250 ml'; }
+ return {available:true,name:name.replace(/\b\w/g,c=>c.toUpperCase()),type,serving_size,calories,protein_g,carbs_g,fat_g,fibre_g,vitamins:['Varies by recipe'],minerals:['Varies by recipe'],allergens:['Check ingredients and preparation']};
 }
-
-// ---------- Display page (fits the screen, no scrolling) ----------
-function typeIcon(t) {
-  if (t === 'non-veg') return '<span class="nv">🐔</span>';
-  if (t === 'vegan') return LEAFV;
-  return LEAF;
+function submitDishes() {
+ $('inputErr').textContent='';
+ const dishes=[...document.querySelectorAll('.dish')].map(i=>i.value.trim()).filter(Boolean).slice(0,MAX_DISHES);
+ if(!dishes.length) return $('inputErr').textContent='Please add at least one dish (use the + button)';
+ show('loading');
+ setTimeout(()=>{
+   const items=dishes.map(estimateDish);
+   currentItems=items; dataSet(menuKey(),{items,updatedAt:new Date().toISOString(),by:sget('uname')||''});
+   render(items);
+ },450);
 }
+function typeIcon(t) { if(t==='non-veg') return '<span class="nv">🐔</span>'; if(t==='vegan') return LEAFV; return LEAF; }
 function layoutGrid(n) {
-  const landscape = innerWidth >= innerHeight;
-  const cols = landscape ? ({ 1: 1, 2: 2, 3: 3, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4 }[n] || 4) : (n <= 2 ? 1 : 2);
-  const rows = Math.ceil(n / cols);
-  const g = $('cards');
-  g.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-  g.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+ const landscape=innerWidth>=innerHeight;
+ const cols=landscape?({1:1,2:2,3:3,4:2,5:3,6:3,7:4,8:4}[n]||4):(n<=2?1:2);
+ const rows=Math.ceil(n/cols),g=$('cards');
+ g.style.gridTemplateColumns=`repeat(${cols}, minmax(0, 1fr))`; g.style.gridTemplateRows=`repeat(${rows}, minmax(0, 1fr))`;
 }
 function fitCards() {
-  const g = $('cards');
-  if (!g.children.length) return;
-  let fs = 26;
-  g.style.setProperty('--fs', fs + 'px');
-  while (fs > 5 && [...g.children].some(c => c.scrollHeight > c.clientHeight + 1 || c.scrollWidth > c.clientWidth + 1)) {
-    fs -= 0.5;
-    g.style.setProperty('--fs', fs + 'px');
-  }
+ const g=$('cards'); if(!g.children.length)return;
+ let fs=26; g.style.setProperty('--fs',fs+'px');
+ while(fs>5&&[...g.children].some(c=>c.scrollHeight>c.clientHeight+1||c.scrollWidth>c.clientWidth+1)){fs-=.5;g.style.setProperty('--fs',fs+'px');}
 }
 function render(items) {
-  currentItems = (items || []).slice(0, MAX_DISHES);
-  $('cBadge').textContent = sget('counter') || '';
-  $('cards').innerHTML = currentItems.map(f => f.available === false ? `
-    <div class="card4 unavailable">
-      <h2>${esc(f.name)}</h2>
-      <p class="unavailable-label">Dish unavailable</p>
-    </div>` : `
-    <div class="card4">
-      <h2>${esc(f.name)} ${typeIcon(f.type)}</h2>
-      <div class="serving">Serving Size: ${esc(f.serving_size || '-')}</div>
-      <div class="kcal">${esc(f.calories)}<small>kcal*</small></div>
-      <div class="macros">
-        <div class="macro m-protein"><span>Protein</span><b>${esc(f.protein_g)} g</b></div>
-        <div class="macro m-carbs"><span>Carbs</span><b>${esc(f.carbs_g)} g</b></div>
-        <div class="macro m-fat"><span>Fat</span><b>${esc(f.fat_g)} g</b></div>
-        <div class="macro m-fibre"><span>Fibre</span><b>${esc(f.fibre_g ?? f.fiber_g)} g</b></div>
-      </div>
-      <div class="info">
-        <div><b>Vitamins:</b> ${esc((f.vitamins || []).join(', '))}</div>
-        <div><b>Minerals:</b> ${esc((f.minerals || []).join(', '))}</div>
-      </div>
-      <div class="allergen">${WARN}<div><b>Allergens:</b> ${esc((f.allergens || ['None known']).join(', '))}</div></div>
-    </div>`).join('');
-  show('display');
-  layoutGrid(currentItems.length);
-  fitCards();
+ currentItems=(items||[]).slice(0,MAX_DISHES); $('cBadge').textContent=sget('counter')||'';
+ $('cards').innerHTML=currentItems.map(f=>f.available===false?`
+ <div class="card4 unavailable"><h2>${esc(f.name)}</h2><p class="unavailable-label">Dish unavailable</p></div>`:`
+ <div class="card4"><h2>${esc(f.name)} ${typeIcon(f.type)}</h2>
+ <div class="serving">Serving Size: ${esc(f.serving_size||'-')}</div>
+ <div class="kcal">${esc(f.calories)}<small>kcal*</small></div>
+ <div class="macros"><div class="macro m-protein"><span>Protein</span><b>${esc(f.protein_g)} g</b></div>
+ <div class="macro m-carbs"><span>Carbs</span><b>${esc(f.carbs_g)} g</b></div>
+ <div class="macro m-fat"><span>Fat</span><b>${esc(f.fat_g)} g</b></div>
+ <div class="macro m-fibre"><span>Fibre</span><b>${esc(f.fibre_g??f.fiber_g)} g</b></div></div>
+ <div class="info"><div><b>Vitamins:</b> ${esc((f.vitamins||[]).join(', '))}</div><div><b>Minerals:</b> ${esc((f.minerals||[]).join(', '))}</div></div>
+ <div class="allergen">${WARN}<div><b>Allergens:</b> ${esc((f.allergens||['Check ingredients']).join(', '))}</div></div></div>`).join('');
+ show('display'); layoutGrid(currentItems.length); fitCards();
 }
-function relayout() {
-  if (currentPage !== 'display') return;
-  layoutGrid(currentItems.length);
-  fitCards();
-}
-window.addEventListener('resize', relayout);
-document.addEventListener('fullscreenchange', () => setTimeout(relayout, 150));
-
-function goBack() {
-  show('input');
-  if (!document.querySelectorAll('.dish').length) currentItems.forEach(f => addRow(f.name));   // pre-fill current dishes
-}
-function toggleFull() {
-  document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
-}
-
-// TV auto-update: when someone changes this counter's menu from another device
-setInterval(async () => {
-  if (currentPage !== 'display' || !token()) return;
-  try {
-    const r = await fetch('/api/menu', { headers: authH() });
-    if (r.status === 401) return logout();
-    const d = await r.json();
-    const items = d.items || [];
-    if (items.length && JSON.stringify(items) !== JSON.stringify(currentItems)) {
-      localStorage.setItem('items', JSON.stringify(items));
-      render(items);
-    }
-  } catch (e) {}
-}, 20000);
-
-// ---------- On page load ----------
+function relayout() { if(currentPage!=='display')return; layoutGrid(currentItems.length); fitCards(); }
+window.addEventListener('resize',relayout);
+document.addEventListener('fullscreenchange',()=>setTimeout(relayout,150));
+function goBack() { show('input'); if(!document.querySelectorAll('.dish').length) currentItems.forEach(f=>addRow(f.name)); }
+function toggleFull() { document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }
 (async function init() {
-  await loadCounters();
-  if (!token()) return show('login');
-  setWho();
-  await loadMenuAndShow();
+ loadCounters();
+ // A counter list and menu are saved on this browser only.
+ if(!token()) { show('login'); return; }
+ setWho(); loadMenuAndShow();
 })();
 </script>
 </body>

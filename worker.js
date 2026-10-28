@@ -1,9 +1,8 @@
 
-import { httpServerHandler } from "cloudflare:node";
-import app from "./server.js";
-
-// Start the existing Express application on the
-// internal port used by Cloudflare's HTTP server adapter.
-app.listen(3000);
-
-export default httpServerHandler({ port: 3000 });
+export default {
+  async fetch(request, env, ctx) {
+    return new Response("Cafeteria Display Worker is running!", {
+      headers: { "content-type": "text/plain" },
+    });
+  },
+};
