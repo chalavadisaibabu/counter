@@ -1,8 +1,9 @@
+
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "server.js": {
-      "includeFiles": "node_modules/debug/src/common.js"
+      "includeFiles": "node_modules/debug/src/**"
     }
   }
 }
